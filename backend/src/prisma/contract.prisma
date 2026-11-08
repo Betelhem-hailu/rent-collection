@@ -1,0 +1,175 @@
+// ==========================
+// ENUMS
+// ==========================
+enum PaymentPeriod {
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  YEARLY
+}
+
+enum LeaseStatus {
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+  PARTIAL_PAID
+}
+
+enum UrgencyStatus {
+  DUE
+  OVERDUE
+  UPCOMING
+}
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY
+  BANK
+}
+
+enum RoleType {
+  ADMIN
+  USER
+}
+
+// ==========================
+// PROPERTY TYPE
+// ==========================
+model PropertyType {
+  id         Int        @id @default(autoincrement())
+  name       String     @unique
+
+  properties Property[]
+}
+
+// ==========================
+// USER
+// ==========================
+model User {
+  id       String    @id @default(cuid(2))
+  name     String
+  phone    String    @unique
+  password String
+  role     RoleType
+  isActive Boolean   @default(false)
+
+  landlord Landlord?
+  tenant   Tenant?
+}
+
+// ==========================
+// LANDLORD
+// ==========================
+model Landlord {
+  userId          String     @id
+  user            User       @relation(fields:[userId], references:[id])
+
+  propertiesOwned Property[]
+}
+
+// ==========================
+// TENANT
+// ==========================
+model Tenant {
+  userId String  @id
+  user   User    @relation(fields:[userId], references:[id])
+
+  leases Lease[]
+}
+
+// ==========================
+// PROPERTY
+// ==========================
+model Property {
+  id             String       @id @default(cuid(2))
+  size           Decimal // square feet
+  description      String
+  rooms          Int
+  location       String
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+
+  propertyTypeId Int
+  propertyType   PropertyType @relation(fields:[propertyTypeId], references:[id])
+
+  landlordId     String
+  landlord       Landlord     @relation(fields:[landlordId], references:[userId])
+
+  leases         Lease[]
+}
+
+// ==========================
+// LEASE
+// ==========================
+model Lease {
+  id             String          @id @default(cuid(2))
+  amount         Decimal
+  paymentPeriod  PaymentPeriod
+  startDate      DateTime
+  expireDate     DateTime
+  status         LeaseStatus
+  gracePeriod    Int
+  terms          String          
+
+  propertyId     String
+  property       Property        @relation(fields:[propertyId], references:[id])
+
+  tenantId       String
+  tenant         Tenant          @relation(fields:[tenantId], references:[userId])
+
+  billingPeriods BillingPeriod[]
+  payments       Payment[]
+}
+
+// ==========================
+// BILLING PERIOD
+// ==========================
+model BillingPeriod {
+  id            String              @id @default(cuid(2))
+  amount        Decimal
+  startPeriod   DateTime
+  endPeriod     DateTime
+  paymentStatus PaymentStatus
+  urgencyStatus UrgencyStatus
+  paidAmount    Decimal
+
+  leaseId       String
+  lease         Lease               @relation(fields:[leaseId], references:[id])
+
+  allocations   PaymentAllocation[]
+}
+
+// ==========================
+// PAYMENT
+// ==========================
+model Payment {
+  id             String              @id @default(cuid(2))
+  amount         Decimal
+  transactionRef String              @unique
+  paymentDate    DateTime
+  paymentMethod  PaymentMethod
+
+  leaseId        String
+  lease          Lease               @relation(fields:[leaseId], references:[id])
+
+  allocations    PaymentAllocation[]
+}
+
+// ==========================
+// PAYMENT ALLOCATION
+// ==========================
+model PaymentAllocation {
+  id              String        @id @default(cuid(2))
+  amountAllocated Decimal
+
+  paymentId       String
+  payment         Payment       @relation(fields:[paymentId], references:[id])
+
+  billingPeriodId String
+  billingPeriod   BillingPeriod @relation(fields:[billingPeriodId], references:[id])
+}

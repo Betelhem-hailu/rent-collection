@@ -1,0 +1,47 @@
+# Dependencies and package manager caches
+node_modules/
+.pnpm-store/
+.npm/
+
+# Environment secrets (keep shareable templates)
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Build output and caches
+.next/
+out/
+dist/
+build/
+coverage/
+.cache/
+.turbo/
+*.tsbuildinfo
+contract.json
+contract.d.ts
+
+# Logs
+*.log
+
+# Local editor and operating system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+
+# Local deployment metadata and private keys
+.vercel/
+*.pem
+*.key
+
+*.agents
+*.cursor
+*.claude
+*.devin
+
+AGENTS.md
+CLAUDE.md
