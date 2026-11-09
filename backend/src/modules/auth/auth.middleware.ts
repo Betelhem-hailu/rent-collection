@@ -1,5 +1,5 @@
 import { Response, NextFunction } from "express";
-import { verify } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { AuthRequest } from "../../utils/type.js";
 import { AuthRepository } from "./auth.repository.js";
 
@@ -20,7 +20,7 @@ export class AuthMiddleware {
         }
         const token = authHeader.split(' ')[1];
         if (!token) { return res.status(401).json({ message: "Token missing", }); } 
-        try { const payload = verify(token, secret); 
+        try { const payload = jwt.verify(token, secret); 
             req.userId = (payload as { userId: string }).userId; 
             next(); 
         } catch (error) { 
