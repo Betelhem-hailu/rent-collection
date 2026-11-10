@@ -11,8 +11,9 @@ export const register = async (req: Request, res: Response) => {
     const user = await authService.register(dto);
     res.status(201).json({ user });
   } catch (err: any) {
-    if (err.message === 'EMAIL_ALREADY_EXISTS') {
-      return res.status(409).json({ error: 'Email already registered' });
+    console.log('error', err);
+    if (err.message === 'PHONE_ALREADY_EXISTS') {
+      return res.status(409).json({ error: 'Phone already registered' });
     }
     if (err.name === 'ZodError') {
       return res.status(400).json({ error: err.errors });

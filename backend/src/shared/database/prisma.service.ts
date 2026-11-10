@@ -21,3 +21,10 @@ export const prisma = globalForPrisma.prisma ?? postgres<Contract>({
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
+
+export async function connectDatabase() {
+  await prisma.connect();
+  // The pool is lazy; a transaction verifies a real connection before logging.
+  await prisma.transaction(async () => {});
+  console.log('Database connection established.');
+}

@@ -20,12 +20,10 @@ export class AuthService {
       name: dto.name,
       phone: dto.phone,
       passwordHash,
-      role: dto.role.toUpperCase() as 'ADMIN' | 'USER',
+      role: 'USER',
     });
 
-    if (dto.role.toUpperCase() === 'USER') {
       await this.authRepository.createDomainRole(dto.businessRole?.toUpperCase() as 'LANDLORD' | 'TENANT', user.id);
-    }
 
     return {
       id: user.id,

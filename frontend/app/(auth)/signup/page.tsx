@@ -20,16 +20,9 @@ export default function SignupPage() {
       return;
     }
 
-    // Set the backend origin in NEXT_PUBLIC_API_URL when using a separate API server.
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
-    if (!apiUrl) {
-      setError("Registration is not available yet. Please try again later.");
-      return;
-    }
-
     setPending(true);
     try {
-      const response = await fetch(`${apiUrl}/api/v1/auth/register`, {
+      const response = await fetch(`/api/v1/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

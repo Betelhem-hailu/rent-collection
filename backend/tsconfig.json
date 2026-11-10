@@ -1,5 +1,8 @@
 {
+"include": ["src", "prisma", "prisma.config.ts"],
   "compilerOptions": {
+    "types": ["node"],
+    "skipLibCheck": true,
     "target": "ESNext",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",

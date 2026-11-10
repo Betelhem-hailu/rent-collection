@@ -84,7 +84,7 @@ const inputClass =
 type Props = {
   properties: Option[];
   tenants: Option[];
-  onCreate: (lease: Lease) => void;
+  onCreate: (lease: Lease) => void | Promise<void>;
 };
 
 export function NewLeaseForm({ properties, tenants, onCreate }: Props) {
@@ -95,7 +95,7 @@ export function NewLeaseForm({ properties, tenants, onCreate }: Props) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [graceDays, setGraceDays] = useState("5");
-  const [lateFee, setLateFee] = useState("5");
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
   const schedule = useMemo(
@@ -111,12 +111,12 @@ export function NewLeaseForm({ properties, tenants, onCreate }: Props) {
     setStartDate("");
     setEndDate("");
     setGraceDays("5");
-    setLateFee("5");
     setError("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (pending) return;
 
     if (!propertyId || !tenantId || !rent || !startDate || !endDate) {
       setError("Please fill in all required fields.");
@@ -127,7 +127,10 @@ export function NewLeaseForm({ properties, tenants, onCreate }: Props) {
       return;
     }
 
-    onCreate({
+    setPending(true);
+    try {
+    await onCreate({
+      propertyId, tenantId,
       id: `lease-${Date.now()}`,
       property: properties.find((p) => p.value === propertyId)?.label ?? propertyId,
       tenant: tenants.find((t) => t.value === tenantId)?.label ?? tenantId,
@@ -137,18 +140,19 @@ export function NewLeaseForm({ properties, tenants, onCreate }: Props) {
       startDate,
       endDate,
       graceDays: Number(graceDays) || 0,
-      lateFeePercent: Number(lateFee) || 0,
+      lateFeePercent: 0,
       billingPeriods: schedule,
     } as Lease);
 
     reset();
+    } catch (e) { setError(e instanceof Error ? e.message : "Unable to create lease"); } finally { setPending(false); }
   };
 
   return (
     <div>
       <div className="mb-6">
         <p className="page-title">Create a lease</p>
-        <p className="text-subtitle">The billing schedule updates as you type.</p>
+        <p className="text-subtitle">Preview the payment dates before saving. Billing periods are issued separately.</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] items-start">
@@ -208,19 +212,17 @@ export function NewLeaseForm({ properties, tenants, onCreate }: Props) {
               <input type="number" min={0} className={inputClass} value={graceDays} onChange={(e) => setGraceDays(e.target.value)} />
             </div>
 
-            <div>
-              <label className="text-label block mb-1">Late fee (% of rent)</label>
-              <input type="number" min={0} step="0.1" className={inputClass} value={lateFee} onChange={(e) => setLateFee(e.target.value)} />
-            </div>
+
           </div>
 
           {error && <p className="text-label text-red-500 mt-4">{error}</p>}
 
           <button
+            disabled={pending}
             type="submit"
             className="text-label text-white bg-[var(--color-primary)] rounded-lg px-4 py-2.5 mt-6"
           >
-            Create lease
+            {pending ? "Creating?" : "Create lease"}
           </button>
         </form>
 

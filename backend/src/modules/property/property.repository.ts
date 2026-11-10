@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { prisma } from "../../shared/database/prisma.service.js";
 
 export class PropertyRepository {
@@ -9,6 +10,7 @@ export class PropertyRepository {
 
     async create(data: any) {
         return prisma.orm.public.Property.create({
+            id: randomUUID(),
             location: data.location,
             size: data.size,
             landlordId: data.ownerId,

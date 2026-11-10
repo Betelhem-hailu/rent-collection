@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { prisma } from "../../shared/database/prisma.service.js";
 
 
@@ -8,11 +9,12 @@ export class AuthRepository {
 
   async create(data: { name: string; phone: string; passwordHash: string; role: "ADMIN" | "USER" }) {
     return prisma.orm.public.User.create({
+        id: randomUUID(),
         name: data.name,
         phone: data.phone,
         password: data.passwordHash,
         role: data.role,
-        isActive: data.role === "ADMIN" ? true : false, // Admins are active by default, users need to be activated
+        isActive: data.role === "ADMIN" ? true : false,
       },
     );
   }

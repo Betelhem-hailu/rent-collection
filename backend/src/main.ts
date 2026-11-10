@@ -1,16 +1,24 @@
+import 'dotenv/config';
 import express from 'express';
 import routes from './routes/index.js';
-import { prisma } from './shared/database/prisma.service.js';
-import { config } from "dotenv";
+import { connectDatabase, prisma } from './shared/database/prisma.service.js';
 
-config();
 const app = express();
 app.use(express.json());
 app.use(routes);
 
+// Establish the database connection before accepting HTTP requests.
+try {
+  await connectDatabase();
+} catch (error) {
+  console.error('Database connection failed:', error);
+  await prisma.close();
+  process.exit(1);
+}
+
 // 1. Capture the running server instance to close it cleanly
-const server = app.listen(3000, () => {
-  console.log('Server is running on port 3000');
+const server = app.listen(Number(process.env.PORT || 3001), () => {
+  console.log(`Server is running on port ${process.env.PORT || 3001}`);
 });
 
 // 2. Uniform Graceful Shutdown Function

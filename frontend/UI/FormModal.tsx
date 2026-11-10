@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Modal } from "./Modals";
 
 export type FormField = {
@@ -36,22 +36,12 @@ export function FormModal({
   title,
   description,
   fields,
-  initialValues = {},
   submitLabel = "Save",
   onSubmit,
 }: FormModalProps) {
   const [values, setValues] = useState<FormValues>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
-
-  // Reset every time the modal opens
-  useEffect(() => {
-    // if (open) {
-    //   setValues(initialValues);
-    //   setErrors({});
-    // }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
 
   const setValue = (name: string, value: string) => {
     setValues((v) => ({ ...v, [name]: value }));
@@ -72,6 +62,8 @@ export function FormModal({
       setSubmitting(true);
       await onSubmit(values);
       onClose();
+    } catch (error) {
+      setErrors({ submit: error instanceof Error ? error.message : "Unable to save" });
     } finally {
       setSubmitting(false);
     }
@@ -122,6 +114,7 @@ export function FormModal({
           })}
         </div>
 
+        {errors.submit && <p role="alert" className="text-red-600">{errors.submit}</p>}
         <div className="flex justify-end gap-3 mt-8">
           <button
             type="button"

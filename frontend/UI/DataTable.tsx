@@ -24,9 +24,9 @@ export function DataTable<T>({
       <table className="w-full min-w-[700px] border-collapse text-left">
         <thead>
           <tr className="bg-[var(--color-primary-soft)]">
-            {columns.map((column) => (
+            {columns.map((column, index) => (
               <th
-                key={String(column.key)}
+                key={`${String(column.key)}-${index}`}
                 className="border-b border-[var(--color-border-strong)] px-6 py-3 text-base font-normal text-black"
               >
                 {column.header}
@@ -39,9 +39,9 @@ export function DataTable<T>({
           {data.length > 0 ? (
             data.map((row) => (
               <tr key={getRowKey(row)} className="bg-gray-50">
-                {columns.map((column) => (
+                {columns.map((column, index) => (
                   <td
-                    key={String(column.key)}
+                    key={`${String(column.key)}-${index}`}
                     className="border-b border-slate-300 px-6 py-4 text-base text-slate-500"
                   >
                     {column.render

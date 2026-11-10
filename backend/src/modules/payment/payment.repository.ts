@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import 'temporal-polyfill/global';
 import { Temporal } from 'temporal-polyfill';
 import { prisma } from '../../shared/database/prisma.service.js';
@@ -46,6 +47,7 @@ export class PaymentRepository {
 
   async create(data: CreatePaymentInput) {
     return prisma.orm.public.Payment.create({
+      id: randomUUID(),
       leaseId: data.leaseId,
       amount: data.amount,
       transactionRef: data.transactionRef,

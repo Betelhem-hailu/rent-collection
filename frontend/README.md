@@ -34,3 +34,9 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Backend integration
+
+Run the backend on port 3001 (or set its `PORT`). Next proxies `/api/v1` to `API_URL`, which defaults to `http://localhost:3001`; set `API_URL` in `.env.local` for another backend origin, then restart Next. Login and registration use this same proxy.
+
+All landlord pages require an activated landlord account. Property types must be present in the database, and tenants must register before being selected for a lease. Find a new tenant by their exact phone number on the leases page. Payment receipts do not automatically allocate to bills; outstanding balances come from existing billing periods.

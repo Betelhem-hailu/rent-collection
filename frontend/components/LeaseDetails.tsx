@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Drawer } from "@/UI/Drawer";
 import { BillingPeriod, Lease } from "@/Data/leaseData";
 import { Column, DataTable } from "@/UI/DataTable";
@@ -40,8 +40,8 @@ export function LeaseDetails({
   onRenew,
   onTerminate,
 }: LeaseDetailsProps) {
-  const [graceDays, setGraceDays] = useState("");
-//   const [lateFee, setLateFee] = useState("");
+  const [graceDays, setGraceDays] = useState<string | null>(null);
+//   const [lateFee, setLateFee] = useState<string | null>(null);
 
   const billingColumns: Column<BillingPeriod>[] = [
   {
@@ -67,14 +67,6 @@ export function LeaseDetails({
     ),
   },
 ];
-  // Sync the inputs whenever a different lease is opened
-  useEffect(() => {
-    if (lease) {
-     // setGraceDays(String(lease.graceDays));
-      //setLateFee(String(lease.lateFeePercent));
-    }
-  }, [lease]);
-
   const isActive = lease?.status === "Active";
 
   const rows =
@@ -120,7 +112,7 @@ export function LeaseDetails({
               <input
                 type="number"
                 min={0}
-                value={graceDays}
+                value={graceDays ?? String(lease.graceDays)}
                 onChange={(e) => setGraceDays(e.target.value)}
                 disabled={!isActive}
                 className={inputClass}
@@ -144,7 +136,7 @@ export function LeaseDetails({
             disabled={!isActive}
             onClick={() =>
               onSaveTerms?.(lease.id, {
-                graceDays: Number(graceDays),
+                graceDays: Number(graceDays ?? lease.graceDays),
                 // lateFeePercent: Number(lateFee),
               })
             }

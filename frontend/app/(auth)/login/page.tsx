@@ -15,16 +15,10 @@ export default function LoginPage() {
     if (pending) return;
     setError("");
     const data = new FormData(event.currentTarget);
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
-    if (!apiUrl) {
-      setError("Sign in is not available yet. Please try again later.");
-      return;
-    }
-
     setPending(true);
     try {
       const phone = String(data.get("phone")).trim();
-      const response = await fetch(`${apiUrl}/api/v1/auth/login`, {
+      const response = await fetch(`/api/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // The existing controller calls its phone argument "email".

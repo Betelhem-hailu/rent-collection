@@ -9,13 +9,15 @@ export type BillingPeriod = {
 
 export type Lease = {
   id: string;
+  propertyId?: string;
+  tenantId?: string;
   property: string;
   status: "Active" | "Ended" | "Terminated";
-  contact: "+251902478529",
+  contact: string;
   tenant: string;
   rent: number;
   onTimePayment: number;
-  billingCycle: "monthly";
+  billingCycle: "monthly" | "quarterly" | "yearly" | "half_yearly";
   startDate: string;
   endDate: string;
   graceDays: number;
