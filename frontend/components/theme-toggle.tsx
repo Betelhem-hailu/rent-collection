@@ -13,10 +13,8 @@ const options = [
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => setMounted(true), []);
 
   // Close when clicking outside or pressing Escape
   useEffect(() => {
@@ -63,7 +61,7 @@ export function ThemeToggle() {
             >
               <Icon className="h-4 w-4" />
               <span className="flex-1 text-left">{label}</span>
-              {mounted && theme === value && <Check className="h-4 w-4" />}
+              {theme === value && <Check className="h-4 w-4" />}
             </button>
           ))}
         </div>

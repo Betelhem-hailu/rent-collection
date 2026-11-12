@@ -5,6 +5,8 @@ export type BillingPeriod = {
   due: string;
   graceEnds: string;
   amount: number;
+  paidAmount?: number;
+  paymentStatus?: string;
 };
 
 export type Lease = {

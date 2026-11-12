@@ -22,7 +22,7 @@ const statusStyles: Record<Lease["status"], string> = {
 };
 
 const inputClass =
-  "w-24 border border-gray-200 rounded-lg px-3 py-2 text-body bg-white " +
+  "w-24 border border-[var(--color-border)] rounded-lg px-3 py-2 text-body bg-[var(--color-surface)] " +
   "focus:outline-none focus:border-[var(--color-primary)]";
 
 type LeaseDetailsProps = {
@@ -66,6 +66,9 @@ export function LeaseDetails({
       <span className="text-subtitle text-[var(--color-text)]">{formatMoney(p.amount)}</span>
     ),
   },
+  { key: 'paidAmount', header: 'Paid', render: p => formatMoney(p.paidAmount || 0) },
+  { key: 'id', header: 'Balance', render: p => formatMoney(Math.max(0, p.amount - (p.paidAmount || 0))) },
+  { key: 'paymentStatus', header: 'Status', render: p => (p.paymentStatus || 'UNPAID').replaceAll('_', ' ') },
 ];
   const isActive = lease?.status === "Active";
 
@@ -140,7 +143,7 @@ export function LeaseDetails({
                 // lateFeePercent: Number(lateFee),
               })
             }
-            className="text-label border border-gray-200 rounded-lg px-4 py-2 mt-3 hover:bg-gray-50 disabled:opacity-50"
+            className="text-label border border-[var(--color-border)] rounded-lg px-4 py-2 mt-3 hover:bg-[var(--color-surface-hover)] disabled:opacity-50"
           >
             Save terms
           </button>
@@ -162,7 +165,7 @@ export function LeaseDetails({
                     onTerminate?.(lease.id);
                   }
                 }}
-                className="text-label text-red-600 border border-gray-200 rounded-lg px-4 py-2.5 hover:bg-red-50"
+                className="text-label text-red-600 border border-[var(--color-border)] rounded-lg px-4 py-2.5 hover:bg-red-50"
               >
                 Terminate lease
               </button>

@@ -54,12 +54,15 @@ model User {
   id       String    @id @default(cuid(2))
   name     String
   phone    String    @unique
+  email    String?
   password String
   role     RoleType
   isActive Boolean   @default(false)
 
   landlord Landlord?
   tenant   Tenant?
+  sentNotifications Notification[] @relation("NotificationSender")
+  notifications Notification[] @relation("NotificationRecipient")
 }
 
 // ==========================
@@ -80,6 +83,7 @@ model Tenant {
   user   User    @relation(fields:[userId], references:[id])
 
   leases Lease[]
+  checkouts Checkout[]
 }
 
 // ==========================
@@ -124,6 +128,8 @@ model Lease {
 
   billingPeriods BillingPeriod[]
   payments       Payment[]
+  checkouts      Checkout[]
+  notifications  Notification[]
 }
 
 // ==========================
@@ -172,4 +178,36 @@ model PaymentAllocation {
 
   billingPeriodId String
   billingPeriod   BillingPeriod @relation(fields:[billingPeriodId], references:[id])
+}
+
+model Checkout {
+  id String @id
+  leaseId String
+  lease Lease @relation(fields:[leaseId], references:[id])
+  tenantId String
+  tenant Tenant @relation(fields:[tenantId], references:[userId])
+  amount Decimal
+  currency String @default("ETB")
+  status String @default("PENDING")
+  checkoutUrl String?
+  providerReference String?
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id String @id
+  leaseId String
+  lease Lease @relation(fields:[leaseId], references:[id])
+  senderId String
+  sender User @relation("NotificationSender", fields:[senderId], references:[id])
+  recipientId String
+  recipient User @relation("NotificationRecipient", fields:[recipientId], references:[id])
+  recipientEmail String
+  subject String
+  body String
+  status String @default("PENDING")
+  error String?
+  createdAt DateTime @default(now())
+  lastAttemptAt DateTime?
+  sentAt DateTime?
 }

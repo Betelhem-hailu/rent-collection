@@ -10,6 +10,9 @@ export type FormField = {
   options?: { label: string; value: string }[]; // for select
   placeholder?: string;
   required?: boolean;
+  min?: string;
+  max?: string;
+  step?: string;
   span?: 1 | 2; // 2 = full width in the 2-column grid
 };
 
@@ -27,7 +30,7 @@ type FormModalProps = {
 };
 
 const inputClass =
-  "w-full border border-gray-200 rounded-lg px-3 py-2 text-body bg-white " +
+  "w-full border border-[var(--color-border)] rounded-lg px-3 py-2 text-body bg-[var(--color-surface)] " +
   "focus:outline-none focus:border-[var(--color-primary)]";
 
 export function FormModal({
@@ -104,6 +107,9 @@ export function FormModal({
                   <input
                     {...common}
                     type={f.type ?? "text"}
+                    min={f.min}
+                    max={f.max}
+                    step={f.step}
                     onChange={(e) => setValue(f.name, e.target.value)}
                   />
                 )}
@@ -119,7 +125,7 @@ export function FormModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-label border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50"
+            className="text-label border border-[var(--color-border)] rounded-lg px-4 py-2 hover:bg-[var(--color-surface-hover)]"
           >
             Cancel
           </button>

@@ -3,19 +3,24 @@ import { config } from "dotenv";
 
 config();
 const secret = process.env.JWT_SECRET_KEY!;
-const expiresIn = process.env.JWT_EXPIRATION as import('jsonwebtoken').SignOptions['expiresIn'] | undefined;
 
 const generateToken = (payload: string): string => {
+    const configuredExpiration = process.env.JWT_EXPIRATION?.trim();
     if (!secret) {
         throw new Error('JWT_SECRET_KEY environment variable is missing.');
     }
 
-    if (!expiresIn) {
+    if (!configuredExpiration) {
         throw new Error('JWT_EXPIRATION environment variable is missing.');
     }
 
+    // Environment values are strings; jsonwebtoken treats unitless strings as milliseconds.
+    const expiresIn = /^\d+$/.test(configuredExpiration)
+        ? Number(configuredExpiration)
+        : configuredExpiration as import('jsonwebtoken').SignOptions['expiresIn'];
+
     try {
-        const token = jwt.sign(payload, secret, { expiresIn });
+        const token = jwt.sign({ userId: payload }, secret, { expiresIn });
         return token;
     } catch (error) {
         console.error('Error generating JWT token:', error);

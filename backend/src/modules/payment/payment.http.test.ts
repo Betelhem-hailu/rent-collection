@@ -22,7 +22,7 @@ async function withServer(app: ReturnType<typeof express>, run: (url: string) =>
   }
 }
 
-test('payment routes require authentication and webhook remains unimplemented', async () => {
+test('payment receipt routes require authentication', async () => {
   const app = express();
   app.use(express.json());
   app.use('/api/v1', paymentRoutes);
@@ -31,8 +31,6 @@ test('payment routes require authentication and webhook remains unimplemented', 
       const response = await fetch(`${url}/api/v1${path}`, { method });
       assert.equal(response.status, 401);
     }
-    const webhook = await fetch(`${url}/api/v1/payments/payment-1/webhook`, { method: 'POST' });
-    assert.equal(webhook.status, 501);
   });
 });
 

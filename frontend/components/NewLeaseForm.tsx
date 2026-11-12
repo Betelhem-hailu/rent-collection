@@ -5,9 +5,9 @@ import { DataTable, type Column } from "@/UI/DataTable";
 import type { BillingPeriod, Lease } from "@/Data/leaseData";
 
 type Option = { label: string; value: string };
-type Frequency = "monthly" | "quarterly" | "yearly";
+type Frequency = "monthly" | "quarterly" | "half_yearly" | "yearly";
 
-const MONTHS_PER: Record<Frequency, number> = { monthly: 1, quarterly: 3, yearly: 12 };
+const MONTHS_PER: Record<Frequency, number> = { monthly: 1, quarterly: 3, half_yearly: 6, yearly: 12 };
 
 const formatDate = (iso: string) =>
   new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", {
@@ -34,15 +34,17 @@ function buildSchedule(
   const end = new Date(endDate + "T00:00:00Z");
   const periods: BillingPeriod[] = [];
 
-  for (let i = 0; i < 120; i++) {
-    const pStart = new Date(
-      Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + i * step, start.getUTCDate())
-    );
+  const anniversary = (months: number) => {
+    const first = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + months, 1));
+    const lastDay = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+    first.setUTCDate(Math.min(start.getUTCDate(), lastDay));
+    return first;
+  };
+  for (let i = 0; i < 600; i++) {
+    const pStart = anniversary(i * step);
     if (pStart > end) break;
 
-    const next = new Date(
-      Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + (i + 1) * step, start.getUTCDate())
-    );
+    const next = anniversary((i + 1) * step);
     const pEnd = new Date(next);
     pEnd.setUTCDate(pEnd.getUTCDate() - 1);
     if (pEnd > end) pEnd.setTime(end.getTime());
@@ -56,7 +58,7 @@ function buildSchedule(
       periodEnd: toISO(pEnd),
       due: toISO(pStart),
       graceEnds: toISO(grace),
-      amount: rent * step,
+      amount: Math.round(Math.round(rent * 100) * step * ((pEnd.getTime() - pStart.getTime()) / 86400000 + 1) / ((next.getTime() - pStart.getTime()) / 86400000)) / 100,
     });
   }
   return periods;
@@ -78,7 +80,7 @@ const previewColumns: Column<BillingPeriod>[] = [
 ];
 
 const inputClass =
-  "w-full border border-gray-200 rounded-lg px-3 py-2 text-body bg-white " +
+  "w-full border border-[var(--color-border)] rounded-lg px-3 py-2 text-body bg-[var(--color-surface)] " +
   "focus:outline-none focus:border-[var(--color-primary)]";
 
 type Props = {
@@ -152,20 +154,19 @@ export function NewLeaseForm({ properties, tenants, onCreate }: Props) {
     <div>
       <div className="mb-6">
         <p className="page-title">Create a lease</p>
-        <p className="text-subtitle">Preview the payment dates before saving. Billing periods are issued separately.</p>
+        <p className="text-subtitle">Preview the payment dates before saving. Bills are generated when the lease is saved. Partial final periods are prorated.</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] items-start">
         {/* Form */}
         <form
           onSubmit={handleSubmit}
-          noValidate
-          className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6"
+          className="bg-[var(--color-surface)] rounded-2xl shadow-sm border border-[var(--color-border)] p-6"
         >
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-label block mb-1">Property</label>
-              <select className={inputClass} value={propertyId} onChange={(e) => setPropertyId(e.target.value)}>
+              <label htmlFor="lease-property" className="text-label block mb-1">Property</label>
+              <select id="lease-property" className={inputClass} value={propertyId} onChange={(e) => setPropertyId(e.target.value)}>
                 <option value="">Select…</option>
                 {properties.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -174,8 +175,8 @@ export function NewLeaseForm({ properties, tenants, onCreate }: Props) {
             </div>
 
             <div>
-              <label className="text-label block mb-1">Tenant</label>
-              <select className={inputClass} value={tenantId} onChange={(e) => setTenantId(e.target.value)}>
+              <label htmlFor="lease-tenant" className="text-label block mb-1">Tenant</label>
+              <select id="lease-tenant" className={inputClass} value={tenantId} onChange={(e) => setTenantId(e.target.value)}>
                 <option value="">Select…</option>
                 {tenants.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
@@ -184,32 +185,33 @@ export function NewLeaseForm({ properties, tenants, onCreate }: Props) {
             </div>
 
             <div>
-              <label className="text-label block mb-1">Monthly rent (ETB)</label>
-              <input type="number" min={0} className={inputClass} value={rent} onChange={(e) => setRent(e.target.value)} />
+              <label htmlFor="lease-rent" className="text-label block mb-1">Monthly rent (ETB)</label>
+              <input id="lease-rent" aria-label="Monthly rent (ETB)" type="number" min="0.01" max="1000000000000" step="0.01" required className={inputClass} value={rent} onChange={(e) => setRent(e.target.value)} />
             </div>
 
             <div>
-              <label className="text-label block mb-1">Billing frequency</label>
-              <select className={inputClass} value={frequency} onChange={(e) => setFrequency(e.target.value as Frequency)}>
+              <label htmlFor="lease-frequency" className="text-label block mb-1">Billing frequency</label>
+              <select id="lease-frequency" className={inputClass} value={frequency} onChange={(e) => setFrequency(e.target.value as Frequency)}>
                 <option value="monthly">Monthly</option>
                 <option value="quarterly">Quarterly</option>
+                <option value="half_yearly">Half yearly</option>
                 <option value="yearly">Yearly</option>
               </select>
             </div>
 
             <div>
-              <label className="text-label block mb-1">Start date</label>
-              <input type="date" className={inputClass} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              <label htmlFor="lease-start" className="text-label block mb-1">Start date</label>
+              <input id="lease-start" type="date" required className={inputClass} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
 
             <div>
-              <label className="text-label block mb-1">End date</label>
-              <input type="date" className={inputClass} value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
+              <label htmlFor="lease-end" className="text-label block mb-1">End date</label>
+              <input id="lease-end" type="date" required className={inputClass} value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
             </div>
 
             <div>
-              <label className="text-label block mb-1">Grace period (days)</label>
-              <input type="number" min={0} className={inputClass} value={graceDays} onChange={(e) => setGraceDays(e.target.value)} />
+              <label htmlFor="lease-grace" className="text-label block mb-1">Grace period (days)</label>
+              <input id="lease-grace" aria-label="Grace period (days)" type="number" min={0} max={365} className={inputClass} value={graceDays} onChange={(e) => setGraceDays(e.target.value)} />
             </div>
 
 
@@ -227,7 +229,7 @@ export function NewLeaseForm({ properties, tenants, onCreate }: Props) {
         </form>
 
         {/* Preview */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 min-w-0">
+        <div className="bg-[var(--color-surface)] rounded-2xl shadow-sm border border-[var(--color-border)] p-6 min-w-0">
           <p className="text-section-title mb-3">Billing schedule preview</p>
           <DataTable
             columns={previewColumns}

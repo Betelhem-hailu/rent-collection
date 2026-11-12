@@ -1,2 +1,2 @@
-import { LandlordPage } from "@/components/LandlordPage";
-export default function Page() { return <LandlordPage page="payments" />; }
+import { ApplicationPage } from "@/components/ApplicationPage";
+export default function Page() { return <ApplicationPage page="payments" />; }

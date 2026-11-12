@@ -33,9 +33,6 @@ export function createPaymentController(service: PaymentService) {
         return res.status(201).json({ payment });
       } catch (error) { return handleError(res, error); }
     },
-    async handleWebhook(_req: AuthRequest, res: Response) {
-      return res.status(501).json({ error: 'Payment provider webhook integration is not configured' });
-    },
   };
 }
 

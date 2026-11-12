@@ -5,9 +5,12 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch --import dotenv/config src/main.ts",
-    "build": "tsc --rootDir src --outDir dist",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "contract:emit": "prisma contract emit"
+    "build": "tsc -p tsconfig.build.json",
+    "test": "node --import tsx --test src/modules/auth/auth.test.ts src/modules/payment/payment.test.ts src/modules/payment/payment.http.test.ts src/modules/landlord/landlord.service.test.ts src/modules/landlord/landlord.http.test.ts src/modules/billing/billing.test.ts src/modules/checkout/chapa.test.ts src/modules/notification/email.test.ts",
+    "seed": "tsx --import dotenv/config src/prisma/seed.ts",
+    "contract:emit": "prisma contract emit",
+    "test:e2e": "tsx --import dotenv/config scripts/e2e.ts",
+    "start": "node --import dotenv/config dist/main.js"
   },
   "keywords": [],
   "author": "",
@@ -27,6 +30,8 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^10.5.0",
+    "pg": "8.22.0",
     "temporal-polyfill": "^1.0.8"
   },
   "devDependencies": {
@@ -35,9 +40,13 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.5.0",
+    "@types/nodemailer": "^8.0.2",
+    "@types/smtp-server": "^3.5.13",
     "prisma": "8.0.0-rc.10",
+    "smtp-server": "^3.21.4",
     "tsx": "^4.20.0",
     "typescript": "^5.9.0",
-    "zod": "^4.5.4"
+    "zod": "^4.5.4",
+    "@types/pg": "8.20.4"
   }
 }

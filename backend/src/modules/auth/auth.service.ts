@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { AuthRepository } from './auth.repository.js';
 import { RegisterDto } from './dto/register.dto.js';
 import generateToken from './helper/generateToken.js';
@@ -21,9 +22,9 @@ export class AuthService {
       phone: dto.phone,
       passwordHash,
       role: 'USER',
+      email: dto.email,
+      businessRole: dto.businessRole,
     });
-
-      await this.authRepository.createDomainRole(dto.businessRole?.toUpperCase() as 'LANDLORD' | 'TENANT', user.id);
 
     return {
       id: user.id,
@@ -34,7 +35,9 @@ export class AuthService {
   }
 
   async login(phone: string, password: string) {
-    try {
+    if (typeof phone !== 'string' || !phone.trim() || typeof password !== 'string' || !password) {
+      throw new Error('INVALID_CREDENTIALS');
+    }
     const user = await this.authRepository.findByPhone(phone);
     if (!user) {
       throw new Error('INVALID_CREDENTIALS');
@@ -45,19 +48,16 @@ export class AuthService {
       throw new Error('INVALID_CREDENTIALS');
     }
 
-   if (!user.isActive) {
+    if (!user.isActive) {
       throw new Error('USER_NOT_ACTIVE');
     }
 
     const generatedToken = generateToken(user.id);
+    const claims = jwt.decode(generatedToken) as jwt.JwtPayload;
     return {
       token: generatedToken,
-      expiresIn: 3600, // Token expiration time in seconds
+      expiresIn: claims.exp! - claims.iat!,
       message: 'Login successful',
     };
-  } catch (error) {
-    console.error('Error during login:', error);
-    throw new Error('LOGIN_FAILED');
   }
-}
 }

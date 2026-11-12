@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from './AppSession';
 import {
   LayoutDashboard,
   House,
@@ -21,6 +22,8 @@ const navItems = [
 
 export function SideBar() {
     const pathname = usePathname();
+    const { user } = useSession();
+    const items = user.businessRole === 'ADMIN' ? [{ label: 'Accounts', href: '/accounts', icon: Users }] : user.businessRole === 'TENANT' ? navItems.filter(n => ['/dashboard', '/leases', '/payments'].includes(n.href)).map(n => n.href === '/leases' ? { ...n, label: 'Rental information' } : n) : navItems;
     
   return (
     <aside className="fixed left-0 top-0 h-screen w-[180px] rounded-r-2xl bg-white/[0.75] dark:bg-slate-900/80 p-5 shadow-[0px_4px_24px_rgba(0,0,0,0.06)] backdrop-blur-[6px]">
@@ -35,7 +38,7 @@ export function SideBar() {
 
       {/* Navigation */}
       <nav className="flex flex-col gap-3">
-        {navItems.map(({ label, href, icon: Icon }) => {
+        {items.map(({ label, href, icon: Icon }) => {
           const isActive =
             pathname === href || (pathname?.startsWith(`${href}/`) ?? false);
 
@@ -49,12 +52,12 @@ export function SideBar() {
               <Icon
                 size={24}
                 strokeWidth={2}
-                className={isActive ? "text-[#2563EB]" : "text-black"}
+                className={isActive ? "text-[#2563EB]" : "text-[var(--color-text-secondary)]"}
               />
 
               <span
-                className={`font-['Source_Sans_3'] text-sm leading-5 ${
-                  isActive ? "font-semibold text-[#2563EB]" : "text-black"
+                className={`font-sans text-sm leading-5 ${
+                  isActive ? "font-semibold text-[#2563EB]" : "text-[var(--color-text-secondary)]"
                 }`}
               >
                 {label}

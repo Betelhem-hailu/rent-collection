@@ -9,7 +9,7 @@ const amount = z.union([z.string(), z.number().finite()])
 export const CreatePaymentSchema = z.object({
   leaseId: identifier,
   amount,
-  transactionRef: z.string().trim().min(1).max(255),
+  transactionRef: z.string().trim().min(1).max(255).refine(value => !value.startsWith('rent_'), 'This reference prefix is reserved for online payments'),
   paymentMethod: z.enum(['CASH', 'MOBILE_MONEY', 'BANK']),
   paymentDate: z.iso.datetime({ offset: true }).optional(),
 });

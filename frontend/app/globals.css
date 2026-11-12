@@ -3,6 +3,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  --font-source-sans: "Source Sans 3", "Segoe UI", Arial, sans-serif;
   --background: #F8FAFC;
   --foreground: #0F172A;
 }

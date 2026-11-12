@@ -7,16 +7,22 @@ export class AuthRepository {
     return await prisma.orm.public.User.where({ phone }).first();
   }
 
-  async create(data: { name: string; phone: string; passwordHash: string; role: "ADMIN" | "USER" }) {
-    return prisma.orm.public.User.create({
+  async create(data: { name: string; phone: string; passwordHash: string; role: "ADMIN" | "USER"; email?: string; businessRole: 'LANDLORD' | 'TENANT' }) {
+    return prisma.transaction(async tx => {
+      const user = await tx.orm.public.User.create({
         id: randomUUID(),
         name: data.name,
         phone: data.phone,
+        email: data.email,
         password: data.passwordHash,
         role: data.role,
         isActive: data.role === "ADMIN" ? true : false,
       },
-    );
+      );
+      if (data.businessRole === 'LANDLORD') await tx.orm.public.Landlord.create({ userId: user.id });
+      else await tx.orm.public.Tenant.create({ userId: user.id });
+      return user;
+    });
   }
 
   async createDomainRole(type: 'LANDLORD' | 'TENANT', userId: string) {

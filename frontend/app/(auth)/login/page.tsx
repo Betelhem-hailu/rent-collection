@@ -21,8 +21,7 @@ export default function LoginPage() {
       const response = await fetch(`/api/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // The existing controller calls its phone argument "email".
-        body: JSON.stringify({ email: phone, password: data.get("password") }),
+        body: JSON.stringify({ phone, password: data.get("password") }),
       });
       const result: unknown = await response.json().catch(() => null);
       if (!response.ok) {

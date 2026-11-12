@@ -20,14 +20,14 @@ export function DataTable<T>({
   emptyMessage = "No records found.",
 }: DataTableProps<T>) {
   return (
-    <div className="w-full overflow-x-auto rounded-xl border border-slate-400">
+    <div className="w-full overflow-x-auto rounded-xl border border-[var(--color-border-strong)]">
       <table className="w-full min-w-[700px] border-collapse text-left">
         <thead>
           <tr className="bg-[var(--color-primary-soft)]">
             {columns.map((column, index) => (
               <th
                 key={`${String(column.key)}-${index}`}
-                className="border-b border-[var(--color-border-strong)] px-6 py-3 text-base font-normal text-black"
+                className="border-b border-[var(--color-border-strong)] px-6 py-3 text-base font-normal text-[var(--color-text)]"
               >
                 {column.header}
               </th>
@@ -38,11 +38,11 @@ export function DataTable<T>({
         <tbody>
           {data.length > 0 ? (
             data.map((row) => (
-              <tr key={getRowKey(row)} className="bg-gray-50">
+              <tr key={getRowKey(row)} className="bg-[var(--color-surface)]">
                 {columns.map((column, index) => (
                   <td
                     key={`${String(column.key)}-${index}`}
-                    className="border-b border-slate-300 px-6 py-4 text-base text-slate-500"
+                    className="border-b border-[var(--color-border)] px-6 py-4 text-base text-[var(--color-text-secondary)]"
                   >
                     {column.render
                       ? column.render(row)
@@ -55,7 +55,7 @@ export function DataTable<T>({
             <tr>
               <td
                 colSpan={columns.length}
-                className="px-6 py-8 text-center text-slate-500"
+                className="px-6 py-8 text-center text-[var(--color-text-secondary)]"
               >
                 {emptyMessage}
               </td>

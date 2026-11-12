@@ -22,13 +22,12 @@ export class LandlordService {
     const leases = await this.repository.listLeases(properties.map(p => p.id));
     const leaseIds = leases.map(l => l.id);
     const tenantIds = [...new Set(leases.map(l => l.tenantId))];
-    const [tenants, billingPeriods, payments, propertyTypes, user] = await Promise.all([
-      this.repository.listTenants(tenantIds),
-      this.repository.listBillingPeriods(leaseIds),
-      this.repository.listPayments(leaseIds),
-      this.repository.listPropertyTypes(),
-      this.repository.findUser(userId),
-    ]);
+    // Reuse the warm connection rather than opening a connection burst on every overview.
+    const tenants = await this.repository.listTenants(tenantIds);
+    const billingPeriods = await this.repository.listBillingPeriods(leaseIds);
+    const payments = await this.repository.listPayments(leaseIds);
+    const propertyTypes = await this.repository.listPropertyTypes();
+    const user = await this.repository.findUser(userId);
     return { properties, leases, tenants, billingPeriods, payments, propertyTypes, name: user?.name };
   }
 

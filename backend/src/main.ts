@@ -2,10 +2,12 @@ import 'dotenv/config';
 import express from 'express';
 import routes from './routes/index.js';
 import { connectDatabase, prisma } from './shared/database/prisma.service.js';
+import { errorResponse } from './shared/http.js';
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '100kb', verify(req, _res, body) { (req as typeof req & { rawBody?: Buffer }).rawBody = Buffer.from(body); } }));
 app.use(routes);
+app.use(errorResponse);
 
 // Establish the database connection before accepting HTTP requests.
 try {

@@ -34,7 +34,7 @@ export function Modal({ open, onClose, title, description, width = 560, children
         aria-modal="true"
         aria-label={title}
         style={{ width }}
-        className="relative max-w-full max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-xl p-8"
+        className="relative max-w-full max-h-[90vh] overflow-y-auto bg-[var(--color-surface)] rounded-2xl shadow-xl p-8"
       >
         <div className="flex items-start justify-between mb-6">
           <div>
@@ -44,7 +44,7 @@ export function Modal({ open, onClose, title, description, width = 560, children
           <button
             type="button"
             onClick={onClose}
-            className="text-label border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50"
+            className="text-label border border-[var(--color-border)] rounded-lg px-3 py-1.5 hover:bg-[var(--color-surface-hover)]"
           >
             Close
           </button>

@@ -28,6 +28,7 @@ export default function SignupPage() {
         body: JSON.stringify({
           name: String(data.get("name")).trim(),
           phone: String(data.get("phone")).trim(),
+          email: String(data.get("email") || '').trim() || undefined,
           password: data.get("password"),
           role: "user",
           businessRole: data.get("businessRole"),
@@ -59,8 +60,8 @@ export default function SignupPage() {
 
         {created ? (
           <div className="signup-result" role="status">
-            <h2 className="text-section-title">Your account is ready</h2>
-            <p className="text-body-sm">Sign in to get started with DigiRent.</p>
+            <h2 className="text-section-title">Your account has been created</h2>
+            <p className="text-body-sm">Contact support to activate your account before signing in.</p>
             <Link href="/login" className="button button-primary button-md button-full">Go to sign in</Link>
           </div>
         ) : (
@@ -81,6 +82,11 @@ export default function SignupPage() {
                   <option value="LANDLORD">Landlord</option>
                   <option value="TENANT">Tenant</option>
                 </select>
+              </div>
+              <div className="signup-field">
+                <label htmlFor="signup-email" className="text-label">Email (optional)</label>
+                <input id="signup-email" name="email" type="email" className="input-base" autoComplete="email" maxLength={254} />
+                <p className="text-caption">Used for Chapa checkout and overdue rent reminders.</p>
               </div>
               <div className="signup-field">
                 <label htmlFor="signup-password" className="text-label">Password</label>

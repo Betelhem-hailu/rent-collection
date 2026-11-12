@@ -3,6 +3,7 @@ import 'temporal-polyfill/global';
 import { Temporal } from 'temporal-polyfill';
 import { prisma } from '../../shared/database/prisma.service.js';
 import type { CreatePaymentInput, ListPaymentsInput } from './payment.dto.js';
+import { lockLease, syncBilling } from '../billing/billing.repository.js';
 
 export class PaymentRepository {
   async findUser(id: string) {
@@ -46,13 +47,18 @@ export class PaymentRepository {
   }
 
   async create(data: CreatePaymentInput) {
-    return prisma.orm.public.Payment.create({
+    return prisma.transaction(async tx => {
+      await lockLease(tx, data.leaseId);
+      const payment = await tx.orm.public.Payment.create({
       id: randomUUID(),
       leaseId: data.leaseId,
       amount: data.amount,
       transactionRef: data.transactionRef,
       paymentMethod: data.paymentMethod,
       paymentDate: data.paymentDate ? Temporal.Instant.from(data.paymentDate) : Temporal.Now.instant(),
+      });
+      await syncBilling(tx, data.leaseId);
+      return payment;
     });
   }
 }

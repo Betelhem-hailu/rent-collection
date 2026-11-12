@@ -44,7 +44,7 @@ export function Drawer({ open, onClose, title, badge, width = 520, children }: D
         aria-modal="true"
         aria-label={title}
         style={{ width }}
-        className={`absolute right-0 top-0 h-full max-w-full bg-white shadow-xl
+        className={`absolute right-0 top-0 h-full max-w-full bg-[var(--color-surface)] shadow-xl
           p-8 overflow-y-auto transition-transform duration-300 ease-out
           ${open ? "translate-x-0" : "translate-x-full"}`}
       >
@@ -55,7 +55,7 @@ export function Drawer({ open, onClose, title, badge, width = 520, children }: D
           </div>
           <button
             onClick={onClose}
-            className="text-label border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50"
+            className="text-label border border-[var(--color-border)] rounded-lg px-3 py-1.5 hover:bg-[var(--color-surface-hover)]"
           >
             Close
           </button>
