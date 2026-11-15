@@ -13,7 +13,7 @@ router.get('/property/:id', auth.authenticated.bind(auth), route(async (req, res
   const user = await activeUser(req.userId);
   const property = await prisma.orm.public.Property.where({ id: String(req.params.id) }).first();
   if (!property) throw new HttpError(404, 'Property not found');
-  if (property.landlordId !== user.id && user.role !== 'ADMIN' && !await prisma.orm.public.Lease.where({ propertyId: property.id, tenantId: user.id }).first()) throw new HttpError(404, 'Property not found');
+  if (property.landlordId !== user.id && user.role !== 'ADMIN' && !await prisma.orm.public.Lease.where({ propertyId: property.id, tenantUserId: user.id }).first()) throw new HttpError(404, 'Property not found');
   return res.json({ property });
 }));
 export default router;

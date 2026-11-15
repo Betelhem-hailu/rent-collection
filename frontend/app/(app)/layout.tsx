@@ -7,9 +7,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <AppSession><div className="min-h-screen">
       <SideBar />
-      <div className="ml-[157px]">
+      <div className="ml-[72px] min-w-0 md:ml-[200px] xl:ml-[260px]">
         <Header />
-        <main className="p-6">{children}</main>
+        <main className="p-4 sm:p-6">{children}</main>
       </div>
     </div></AppSession>
   );

@@ -12,7 +12,7 @@ export type BillingPeriod = {
 export type Lease = {
   id: string;
   propertyId?: string;
-  tenantId?: string;
+  tenantUserId?: string;
   property: string;
   status: "Active" | "Ended" | "Terminated";
   contact: string;
@@ -23,6 +23,7 @@ export type Lease = {
   startDate: string;
   endDate: string;
   graceDays: number;
+  terms?: string;
   lateFeePercent: number;
   billingPeriods: BillingPeriod[];
 };

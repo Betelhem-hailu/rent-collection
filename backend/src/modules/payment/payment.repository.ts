@@ -20,7 +20,7 @@ export class PaymentRepository {
 
   async findAccessibleLeaseIds(userId: string) {
     const [tenantLeases, properties] = await Promise.all([
-      prisma.orm.public.Lease.where({ tenantId: userId }).select('id').all(),
+      prisma.orm.public.Lease.where({ tenantUserId: userId }).select('id').all(),
       prisma.orm.public.Property.where({ landlordId: userId }).select('id').all(),
     ]);
     const ownedLeases = properties.length

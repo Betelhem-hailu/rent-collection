@@ -8,6 +8,7 @@ const auth = new AuthMiddleware(new AuthRepository());
 
 router.use('/landlord', auth.authenticated.bind(auth), LandlordController.authorize);
 router.get('/landlord/overview', LandlordController.overview);
+router.get('/landlords/:id/tenants', auth.authenticated.bind(auth), LandlordController.authorize, LandlordController.tenants);
 router.post('/landlord/properties', LandlordController.createProperty);
 router.post('/landlord/tenants', LandlordController.findTenant);
 router.post('/landlord/leases', LandlordController.createLease);

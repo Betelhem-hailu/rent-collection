@@ -20,8 +20,9 @@ export class AuthMiddleware {
         }
         const token = authHeader.split(' ')[1];
         if (!token) { return res.status(401).json({ message: "Token missing", }); } 
-        try { const payload = jwt.verify(token, secret); 
-            req.userId = (payload as { userId: string }).userId; 
+        try { const payload = jwt.verify(token, secret, { algorithms: ['HS256'] });
+            if (typeof payload === 'string' || typeof payload.userId !== 'string' || !payload.userId) throw new Error('Invalid token subject');
+            req.userId = payload.userId;
             next(); 
         } catch (error) { 
             return res.status(401).json({ 

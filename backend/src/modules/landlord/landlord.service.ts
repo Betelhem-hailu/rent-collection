@@ -1,11 +1,9 @@
 import type { LandlordRepository } from './landlord.repository.js';
 import { PropertySchema, LeaseSchema, TenantLookupSchema, UpdateLeaseSchema } from './landlord.dto.js';
-
-export class LandlordError extends Error {
-  constructor(public readonly status: number, message: string) {
-    super(message);
-  }
-}
+import { LandlordError } from './landlord.error.js';
+import { validateLeaseUpdate } from '../lease/lease-update.js';
+import { dateOnly, today } from '../billing/billing.js';
+export { LandlordError } from './landlord.error.js';
 
 export class LandlordService {
   constructor(private readonly repository: LandlordRepository) {}
@@ -19,16 +17,16 @@ export class LandlordService {
 
   async overview(userId: string) {
     const properties = await this.repository.listProperties(userId);
-    const leases = await this.repository.listLeases(properties.map(p => p.id));
+    const leases = await this.repository.listLeases(userId);
     const leaseIds = leases.map(l => l.id);
-    const tenantIds = [...new Set(leases.map(l => l.tenantId))];
     // Reuse the warm connection rather than opening a connection burst on every overview.
-    const tenants = await this.repository.listTenants(tenantIds);
-    const billingPeriods = await this.repository.listBillingPeriods(leaseIds);
+    const tenants = await this.repository.listTenants(userId);
+    const billingPeriods = (await this.repository.listBillingPeriods(leaseIds))
+      .map(bill => ({ ...bill, startPeriod: dateOnly(bill.startPeriod), endPeriod: dateOnly(bill.endPeriod) }));
     const payments = await this.repository.listPayments(leaseIds);
     const propertyTypes = await this.repository.listPropertyTypes();
     const user = await this.repository.findUser(userId);
-    return { properties, leases, tenants, billingPeriods, payments, propertyTypes, name: user?.name };
+    return { properties, leases, tenants, billingPeriods, payments, propertyTypes, name: user?.name, businessDate: today() };
   }
 
   async createProperty(userId: string, input: unknown) {
@@ -37,31 +35,36 @@ export class LandlordService {
     return this.repository.createProperty(userId, data);
   }
 
-  async findTenant(input: unknown) {
+  async tenants(userId: string, landlordId: string) {
+    if (landlordId !== userId) throw new LandlordError(404, 'Landlord not found');
+    return this.repository.listTenants(userId);
+  }
+
+  async findTenant(landlordId: string, input: unknown) {
     const { phone } = TenantLookupSchema.parse(input);
-    const user = await this.repository.findUserByPhone(phone);
-    if (!user || !await this.repository.findTenant(user.id)) {
-      throw new LandlordError(404, 'No registered tenant with this phone number');
-    }
+    const user = (await this.repository.listTenants(landlordId)).find(tenant => tenant.phone === phone);
+    if (!user) throw new LandlordError(404, 'No tenant linked to your leases with this phone number');
     return user;
   }
 
   async createLease(userId: string, input: unknown) {
-    const data = LeaseSchema.parse(input);
-    if (!await this.repository.findOwnedProperty(data.propertyId, userId)) throw new LandlordError(404, 'Property not found');
-    if (!await this.repository.findTenant(data.tenantId)) throw new LandlordError(400, 'Tenant not found');
-    return this.repository.createLease(data);
+    const source = input as Record<string, unknown> | null;
+    const data = LeaseSchema.parse({ ...source, rentAmount: source?.rentAmount ?? source?.amount });
+    return this.handleLeaseTenantBinding(userId, data.propertyId, data.tenantName, data.tenantPhone, data);
+  }
+
+  async handleLeaseTenantBinding(landlordId: string, propertyId: string, tenantName: string, tenantPhone: string, leaseDetails: unknown) {
+    const source = leaseDetails as Record<string, unknown> | null;
+    const details = LeaseSchema.parse({ ...source, rentAmount: source?.rentAmount ?? source?.amount, propertyId, tenantName, tenantPhone });
+    return this.repository.createLease(landlordId, details);
   }
 
   async updateLease(userId: string, id: string, input: unknown) {
     const patch = UpdateLeaseSchema.parse(input);
     const lease = await this.repository.findLease(id);
-    if (!lease || !await this.repository.findOwnedProperty(lease.propertyId, userId)) throw new LandlordError(404, 'Lease not found');
-    if (lease.status !== 'ACTIVE') throw new LandlordError(409, 'Only active leases can be changed');
-    if (patch.expireDate && patch.expireDate <= String(lease.expireDate).slice(0, 10)) {
-      throw new LandlordError(400, 'Renewal must extend the lease');
-    }
-    await this.repository.updateLease(lease.id, patch);
+    if (!lease || lease.landlordId !== userId || !await this.repository.findOwnedProperty(lease.propertyId, userId)) throw new LandlordError(404, 'Lease not found');
+    validateLeaseUpdate(lease, patch);
+    await this.repository.updateLease(userId, lease.id, patch);
     return { success: true };
   }
 }

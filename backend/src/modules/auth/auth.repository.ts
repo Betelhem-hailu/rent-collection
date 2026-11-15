@@ -7,7 +7,7 @@ export class AuthRepository {
     return await prisma.orm.public.User.where({ phone }).first();
   }
 
-  async create(data: { name: string; phone: string; passwordHash: string; role: "ADMIN" | "USER"; email?: string; businessRole: 'LANDLORD' | 'TENANT' }) {
+  async create(data: { name: string; phone: string; passwordHash: string; role: 'LANDLORD' | 'TENANT'; email?: string }) {
     return prisma.transaction(async tx => {
       const user = await tx.orm.public.User.create({
         id: randomUUID(),
@@ -16,37 +16,27 @@ export class AuthRepository {
         email: data.email,
         password: data.passwordHash,
         role: data.role,
-        isActive: data.role === "ADMIN" ? true : false,
+        authState: 'PASSWORD',
+        isActive: false,
       },
       );
-      if (data.businessRole === 'LANDLORD') await tx.orm.public.Landlord.create({ userId: user.id });
-      else await tx.orm.public.Tenant.create({ userId: user.id });
+      if (data.role === 'LANDLORD') await tx.orm.public.Landlord.create({ userId: user.id });
       return user;
     });
   }
 
-  async createDomainRole(type: 'LANDLORD' | 'TENANT', userId: string) {
-    if (type === "LANDLORD") {
-      return prisma.orm.public.Landlord.create({
-        userId,
-      });
-    }
-    if (type === "TENANT") {
-      return prisma.orm.public.Tenant.create({
-        userId,
-      });
-    }
+  async verifyPhoneIdentity(id: string) {
+    return prisma.transaction(async tx => {
+      await tx.orm.public.User.where({ id }).update({ id });
+      const user = await tx.orm.public.User.where({ id, role: 'TENANT', isActive: true }).first();
+      if (!user) return null;
+      if (user.authState === 'UNINITIALIZED') await tx.orm.public.User.where({ id }).update({ authState: 'PHONE_VERIFIED' });
+      return user;
+    });
   }
 
   async findRoleByUserId(userId: string) {
-    const landlord = await prisma.orm.public.Landlord.where({ userId }).first();
-    if (landlord) {
-      return 'LANDLORD';
-    }
-    const tenant = await prisma.orm.public.Tenant.where({ userId }).first();
-    if (tenant) {
-      return 'TENANT';
-    }
-    return null;
+    const user = await prisma.orm.public.User.where({ id: userId }).select('role').first();
+    return user?.role || null;
   }
 }

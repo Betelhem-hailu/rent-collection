@@ -34,8 +34,13 @@ export function createLandlordController(service: LandlordService) {
     },
     async findTenant(req: AuthRequest, res: Response) {
       try {
-        const tenant = await service.findTenant(req.body);
+        const tenant = await service.findTenant(req.userId!, req.body);
         return res.json({ tenant });
+      } catch (error) { return handleError(res, error); }
+    },
+    async tenants(req: AuthRequest, res: Response) {
+      try {
+        return res.json({ tenants: await service.tenants(req.userId!, String(req.params.id)) });
       } catch (error) { return handleError(res, error); }
     },
     async createLease(req: AuthRequest, res: Response) {

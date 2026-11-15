@@ -105,6 +105,7 @@ export default function SignupPage() {
             <button type="submit" className="button button-primary button-lg button-full" disabled={pending}>{pending ? "Creating account..." : "Create account"}</button>
           </form>
         )}
+        <p className="signup-footer text-body-sm">Your landlord already added you? <Link href="/activate-tenant" className="signup-link text-primary">Activate tenant account</Link></p>
         <p className="signup-footer text-body-sm">Already have an account? <Link href="/login" className="signup-link text-primary">Sign in</Link></p>
       </div>
     </section>

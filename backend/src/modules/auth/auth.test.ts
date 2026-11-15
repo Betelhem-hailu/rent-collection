@@ -15,7 +15,7 @@ const { createAuthController } = await import('./auth.controller.js');
 const { AuthMiddleware } = await import('./auth.middleware.js');
 const password = 'Regression!934';
 const passwordHash = await bcrypt.hash(password, 4);
-const user = { id: 'auth-test-user', name: 'Test User', phone: '+254700000001', password: passwordHash, role: 'USER', isActive: true };
+const user = { id: 'auth-test-user', name: 'Test User', phone: '+254700000001', password: passwordHash, role: 'TENANT', authState: 'PASSWORD', isActive: true };
 const service = (repository: Partial<AuthRepository>) => new AuthService(repository as AuthRepository);
 
 test('login signs an expiring userId token accepted by authentication middleware', async () => {
@@ -81,4 +81,59 @@ test('HTTP auth returns a usable session, 401, 403 and detailed validation error
     server.closeAllConnections();
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
   }
+});
+
+test('placeholder accounts cannot sign in or be overwritten through registration', async () => {
+  const placeholder = { ...user, password: null, authState: 'UNINITIALIZED' };
+  const subject = service({ findByPhone: async () => placeholder as never });
+  await assert.rejects(subject.login(user.phone, password), /INVALID_CREDENTIALS/);
+  await assert.rejects(subject.register({ name: 'Replacement Name', phone: user.phone, password, businessRole: 'TENANT' }), /PHONE_ALREADY_EXISTS/);
+});
+
+test('a concurrent phone reservation returns a registration conflict without replacing the identity', async () => {
+  const subject = service({ findByPhone: async () => null, create: async () => { throw new Error('Unique conflict', { cause: { code: '23505' } }); } });
+  await assert.rejects(subject.register({ name: 'Registered user', phone: user.phone, password, businessRole: 'TENANT' }), /PHONE_ALREADY_EXISTS/);
+});
+
+test('a verified phone token claims the original identity and issues a regular userId session', async () => {
+  process.env.TENANT_PHONE_VERIFICATION_SECRET = 'phone-verification-test-secret-independent-of-session-key';
+  const proof = jwt.sign({ purpose: 'tenant-phone-login' }, process.env.TENANT_PHONE_VERIFICATION_SECRET, {
+    algorithm: 'HS256', issuer: 'digirent-phone-verifier', audience: 'digirent-tenant-login', subject: '+251911234567', expiresIn: '5m',
+  });
+  let claimed = false;
+  const subject = service({
+    findByPhone: async phone => { assert.equal(phone, '+251911234567'); return { ...user, authState: 'UNINITIALIZED', password: null } as never; },
+    verifyPhoneIdentity: async id => { assert.equal(id, user.id); claimed = true; return user as never; },
+  });
+  const result = await subject.tenantLogin('0911234567', proof);
+  assert.equal(claimed, true);
+  assert.equal((jwt.verify(result.token, process.env.JWT_SECRET_KEY!) as jwt.JwtPayload).userId, user.id);
+  await assert.rejects(subject.tenantLogin('0911234568', proof), /INVALID_PHONE_VERIFICATION/);
+  await assert.rejects(subject.tenantLogin('0911234567', 'invalid-token'), /INVALID_PHONE_VERIFICATION/);
+});
+
+test('phone login rejects expired, wrong-purpose, session-key and unconfigured proofs', async () => {
+  const secret = process.env.TENANT_PHONE_VERIFICATION_SECRET = 'phone-verification-test-secret-independent-of-session-key';
+  const options = { algorithm: 'HS256' as const, issuer: 'digirent-phone-verifier', audience: 'digirent-tenant-login', subject: '+251911234567' };
+  const subject = service({ findByPhone: async () => { throw new Error('Invalid proofs must not look up users'); } });
+  const proofs = [
+    jwt.sign({ purpose: 'tenant-phone-login' }, secret, { ...options, expiresIn: -1 }),
+    jwt.sign({ purpose: 'password-reset' }, secret, { ...options, expiresIn: '5m' }),
+    jwt.sign({ purpose: 'tenant-phone-login' }, process.env.JWT_SECRET_KEY!, { ...options, expiresIn: '5m' }),
+    jwt.sign({ purpose: 'tenant-phone-login' }, secret, options),
+    jwt.sign({ purpose: 'tenant-phone-login' }, secret, { ...options, expiresIn: '1h' }),
+  ];
+  for (const proof of proofs) await assert.rejects(subject.tenantLogin('0911234567', proof), /INVALID_PHONE_VERIFICATION/);
+  process.env.TENANT_PHONE_VERIFICATION_SECRET = process.env.JWT_SECRET_KEY;
+  await assert.rejects(subject.tenantLogin('0911234567', 'token'), /PHONE_LOGIN_UNAVAILABLE/);
+  delete process.env.TENANT_PHONE_VERIFICATION_SECRET;
+  await assert.rejects(subject.tenantLogin('0911234567', 'token'), /PHONE_LOGIN_UNAVAILABLE/);
+});
+
+test('tenant phone verification cannot enable disabled users or change another business role', async () => {
+  const secret = process.env.TENANT_PHONE_VERIFICATION_SECRET = 'phone-verification-test-secret-independent-of-session-key';
+  const proof = jwt.sign({ purpose: 'tenant-phone-login' }, secret, { algorithm: 'HS256', issuer: 'digirent-phone-verifier', audience: 'digirent-tenant-login', subject: '+251911234567', expiresIn: '5m' });
+  await assert.rejects(service({ findByPhone: async () => ({ ...user, isActive: false }) as never }).tenantLogin('0911234567', proof), /USER_NOT_ACTIVE/);
+  await assert.rejects(service({ findByPhone: async () => ({ ...user, role: 'LANDLORD' }) as never }).tenantLogin('0911234567', proof), /INVALID_PHONE_VERIFICATION/);
+  delete process.env.TENANT_PHONE_VERIFICATION_SECRET;
 });

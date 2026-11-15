@@ -1,0 +1,126 @@
+.page {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 8px 0 48px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.header p {
+  margin: 4px 0 0;
+  font-size: 20px;
+}
+
+.header :global(.button) {
+  min-width: 150px;
+  font-weight: 400;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 212px;
+  padding: 20px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-card);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-popover);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.name {
+  padding-top: 2px;
+  font-size: 20px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.badge {
+  padding: 3px 14px;
+  border-radius: 12px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.vacant {
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+}
+
+.type {
+  margin-top: 12px;
+  font-size: 16px;
+}
+
+.rent {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.rent strong {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.tenant {
+  margin-top: auto;
+  padding-top: 30px;
+  padding-bottom: 18px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  padding: 32px 20px;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+
+@media (min-width: 1280px) {
+  .page {
+    padding-inline: 56px;
+  }
+}

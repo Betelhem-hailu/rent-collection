@@ -10,14 +10,8 @@ import checkoutRoutes from '../modules/checkout/checkout.routes.js';
 import notificationRoutes from '../modules/notification/notification.routes.js';
 
 const router = Router();
-router.use('/api/v1', landlordRoutes);
-router.use('/api/v1', authRoutes);
-router.use('/api/v1', paymentRoutes);
-router.use('/api/v1', leaseRoutes);
-router.use('/api/v1', propertyRoutes);
-router.use('/api/v1', accountRoutes);
-router.use('/api/v1', tenantRoutes);
-router.use('/api/v1', checkoutRoutes);
-router.use('/api/v1', notificationRoutes);
+const api = Router();
+api.use(landlordRoutes, authRoutes, paymentRoutes, leaseRoutes, propertyRoutes, accountRoutes, tenantRoutes, checkoutRoutes, notificationRoutes);
+router.use(['/api/v1', '/api'], api);
 
 export default router;

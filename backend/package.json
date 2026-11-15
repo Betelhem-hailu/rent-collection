@@ -6,10 +6,13 @@
   "scripts": {
     "dev": "tsx watch --import dotenv/config src/main.ts",
     "build": "tsc -p tsconfig.build.json",
-    "test": "node --import tsx --test src/modules/auth/auth.test.ts src/modules/payment/payment.test.ts src/modules/payment/payment.http.test.ts src/modules/landlord/landlord.service.test.ts src/modules/landlord/landlord.http.test.ts src/modules/billing/billing.test.ts src/modules/checkout/chapa.test.ts src/modules/notification/email.test.ts",
+    "test": "node --import tsx --test src/modules/auth/auth.test.ts src/modules/auth/activation.test.ts src/modules/payment/payment.test.ts src/modules/payment/payment.http.test.ts src/modules/landlord/landlord.service.test.ts src/modules/landlord/landlord.http.test.ts src/modules/lease/tenant-binding.test.ts src/modules/tenant/tenant.test.ts src/modules/billing/billing.test.ts src/modules/checkout/chapa.test.ts src/modules/notification/email.test.ts",
     "seed": "tsx --import dotenv/config src/prisma/seed.ts",
     "contract:emit": "prisma contract emit",
     "test:e2e": "tsx --import dotenv/config scripts/e2e.ts",
+    "test:tenant-integration": "node --import tsx --test src/modules/lease/tenant-binding.integration.test.ts src/modules/auth/activation.integration.test.ts",
+    "test:activation": "node --import tsx --test src/modules/auth/activation.test.ts",
+    "test:lease-integration": "node --import tsx --test src/modules/lease/lease-update.integration.test.ts",
     "start": "node --import dotenv/config dist/main.js"
   },
   "keywords": [],

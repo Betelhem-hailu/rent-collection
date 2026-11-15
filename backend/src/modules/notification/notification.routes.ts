@@ -18,7 +18,7 @@ router.post('/landlord/leases/:id/remind', auth.authenticated.bind(auth), route(
   const lease = await db.Lease.where({ id: leaseId }).first();
   const property = lease ? await db.Property.where({ id: lease.propertyId, landlordId: user.id }).first() : null;
   if (!lease || !property || !await db.Landlord.where({ userId: user.id }).first()) throw new HttpError(404, 'Lease not found');
-  const tenant = await db.User.where({ id: lease.tenantId }).first();
+  const tenant = await db.User.where({ id: lease.tenantUserId }).first();
   if (!tenant?.email) throw new HttpError(400, 'The tenant needs to add an email address before receiving reminders');
   const { transport, from } = emailTransport();
   const notification = await prisma.transaction(async tx => {

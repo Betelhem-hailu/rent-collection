@@ -32,7 +32,7 @@ export class PaymentService {
     if (user.role === 'ADMIN') return;
     const property = await this.repository.findProperty(lease.propertyId);
     if (property?.landlordId === user.id) return;
-    if (!write && lease.tenantId === user.id) return;
+    if (!write && lease.tenantUserId === user.id) return;
     throw new PaymentError(403, 'You do not have access to payments for this lease');
   }
 

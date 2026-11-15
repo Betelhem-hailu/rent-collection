@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { DataTable, type Column } from "@/UI/DataTable";
-import type { BillingPeriod, Lease } from "@/Data/leaseData";
+import type { BillingPeriod } from "@/Data/leaseData";
 
 type Option = { label: string; value: string };
 type Frequency = "monthly" | "quarterly" | "half_yearly" | "yearly";
@@ -85,13 +85,13 @@ const inputClass =
 
 type Props = {
   properties: Option[];
-  tenants: Option[];
-  onCreate: (lease: Lease) => void | Promise<void>;
+  onCreate: (lease: { propertyId: string; tenantName: string; tenantPhone: string; rent: number; billingCycle: Frequency; startDate: string; endDate: string; graceDays: number }) => void | Promise<void>;
 };
 
-export function NewLeaseForm({ properties, tenants, onCreate }: Props) {
+export function NewLeaseForm({ properties, onCreate }: Props) {
   const [propertyId, setPropertyId] = useState("");
-  const [tenantId, setTenantId] = useState("");
+  const [tenantName, setTenantName] = useState("");
+  const [tenantPhone, setTenantPhone] = useState("");
   const [rent, setRent] = useState("");
   const [frequency, setFrequency] = useState<Frequency>("monthly");
   const [startDate, setStartDate] = useState("");
@@ -107,7 +107,8 @@ export function NewLeaseForm({ properties, tenants, onCreate }: Props) {
 
   const reset = () => {
     setPropertyId("");
-    setTenantId("");
+    setTenantName("");
+    setTenantPhone("");
     setRent("");
     setFrequency("monthly");
     setStartDate("");
@@ -120,7 +121,7 @@ export function NewLeaseForm({ properties, tenants, onCreate }: Props) {
     e.preventDefault();
     if (pending) return;
 
-    if (!propertyId || !tenantId || !rent || !startDate || !endDate) {
+    if (!propertyId || !tenantName.trim() || !tenantPhone.trim() || !rent || !startDate || !endDate) {
       setError("Please fill in all required fields.");
       return;
     }
@@ -132,19 +133,13 @@ export function NewLeaseForm({ properties, tenants, onCreate }: Props) {
     setPending(true);
     try {
     await onCreate({
-      propertyId, tenantId,
-      id: `lease-${Date.now()}`,
-      property: properties.find((p) => p.value === propertyId)?.label ?? propertyId,
-      tenant: tenants.find((t) => t.value === tenantId)?.label ?? tenantId,
-      status: "Active",
+      propertyId, tenantName: tenantName.trim(), tenantPhone: tenantPhone.trim(),
       rent: Number(rent),
       billingCycle: frequency,
       startDate,
       endDate,
       graceDays: Number(graceDays) || 0,
-      lateFeePercent: 0,
-      billingPeriods: schedule,
-    } as Lease);
+    });
 
     reset();
     } catch (e) { setError(e instanceof Error ? e.message : "Unable to create lease"); } finally { setPending(false); }
@@ -175,13 +170,14 @@ export function NewLeaseForm({ properties, tenants, onCreate }: Props) {
             </div>
 
             <div>
-              <label htmlFor="lease-tenant" className="text-label block mb-1">Tenant</label>
-              <select id="lease-tenant" className={inputClass} value={tenantId} onChange={(e) => setTenantId(e.target.value)}>
-                <option value="">Select…</option>
-                {tenants.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
+              <label htmlFor="lease-tenant-name" className="text-label block mb-1">Tenant name</label>
+              <input id="lease-tenant-name" className={inputClass} required minLength={2} maxLength={120} autoComplete="name" value={tenantName} onChange={event => setTenantName(event.target.value)} />
+            </div>
+
+            <div className="col-span-2">
+              <label htmlFor="lease-tenant-phone" className="text-label block mb-1">Tenant phone number</label>
+              <input id="lease-tenant-phone" type="tel" className={inputClass} required maxLength={40} autoComplete="tel" placeholder="0911234567 or +251911234567" value={tenantPhone} onChange={event => setTenantPhone(event.target.value)} aria-describedby="lease-tenant-help" />
+              <p id="lease-tenant-help" className="text-caption mt-1">The tenant can choose Activate tenant account on the sign-in page, verify this phone number, and set their own password. Existing account holders keep their current password.</p>
             </div>
 
             <div>

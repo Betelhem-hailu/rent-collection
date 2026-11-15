@@ -1,11 +1,11 @@
 
-export class LeaseService {
-  constructor(private leaseRepository: any) {}
-    async findLeaseById(id: string) {
-        return this.leaseRepository.findById(id);
-    }
+import { LandlordRepository } from '../landlord/landlord.repository.js';
+import { LandlordService } from '../landlord/landlord.service.js';
 
-    async createLease(data: any) {
-        return this.leaseRepository.create(data);
-    }
+const service = new LandlordService(new LandlordRepository());
+
+export function handleLeaseTenantBinding(
+  landlordId: string, propertyId: string, tenantName: string, tenantPhone: string, leaseDetails: unknown,
+) {
+  return service.handleLeaseTenantBinding(landlordId, propertyId, tenantName, tenantPhone, leaseDetails);
 }

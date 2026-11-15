@@ -3,6 +3,7 @@ import express from 'express';
 import routes from './routes/index.js';
 import { connectDatabase, prisma } from './shared/database/prisma.service.js';
 import { errorResponse } from './shared/http.js';
+import { startActivationDispatcher } from './modules/auth/activation.dispatcher.js';
 
 const app = express();
 app.use(express.json({ limit: '100kb', verify(req, _res, body) { (req as typeof req & { rawBody?: Buffer }).rawBody = Buffer.from(body); } }));
@@ -23,6 +24,8 @@ const server = app.listen(Number(process.env.PORT || 3001), () => {
   console.log(`Server is running on port ${process.env.PORT || 3001}`);
 });
 
+const stopActivationDispatcher = startActivationDispatcher();
+
 // 2. Uniform Graceful Shutdown Function
 async function gracefulShutdown(signal: any) {
   console.log(`Received ${signal}. Shutting down gracefully...`);
@@ -30,6 +33,7 @@ async function gracefulShutdown(signal: any) {
   server.close(async () => {
     console.log('HTTP server closed.');
     try {
+      await stopActivationDispatcher();
       // In Prisma 8, use .close() instead of $disconnect()
       await prisma.close(); 
       console.log('Database connection pool drained.');

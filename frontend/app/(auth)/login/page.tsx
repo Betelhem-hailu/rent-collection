@@ -57,8 +57,8 @@ export default function LoginPage() {
           <fieldset className="signup-fields" disabled={pending}>
             <div className="signup-field">
               <label htmlFor="login-phone" className="text-label">Phone number</label>
-              <input id="login-phone" name="phone" type="tel" className="input-base" autoComplete="username" placeholder="+251911234567" required pattern="\+?[1-9][0-9]{10,14}" aria-describedby="login-phone-hint" />
-              <p id="login-phone-hint" className="text-caption">Include your country code, without spaces.</p>
+              <input id="login-phone" name="phone" type="tel" className="input-base" autoComplete="username" placeholder="+251911234567" required maxLength={32} aria-describedby="login-phone-hint" />
+              <p id="login-phone-hint" className="text-caption">Include your country code, or use an Ethiopian local number such as 0911234567.</p>
             </div>
             <div className="signup-field">
               <label htmlFor="login-password" className="text-label">Password</label>
@@ -72,6 +72,7 @@ export default function LoginPage() {
           <button type="submit" className="button button-primary button-lg button-full" disabled={pending}>{pending ? "Signing in..." : "Sign in"}</button>
         </form>
 
+        <p className="signup-footer text-body-sm">Your landlord created your account? <Link href="/activate-tenant" className="signup-link text-primary">Activate tenant account</Link></p>
         <p className="signup-footer text-body-sm">Don&apos;t have an account? <Link href="/signup" className="signup-link text-primary">Create account</Link></p>
       </div>
     </section>

@@ -13,6 +13,7 @@ export async function activeUser(id?: string) {
   if (!id) throw new HttpError(401, 'Please sign in');
   const user = await prisma.orm.public.User.where({ id }).first();
   if (!user?.isActive) throw new HttpError(403, 'Active account required');
+  if (user.authState === 'UNINITIALIZED') throw new HttpError(403, 'Verify your phone number before signing in');
   return user;
 }
 export function errorResponse(error: unknown, _req: Request, res: Response, _next: unknown) {

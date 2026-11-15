@@ -1,0 +1,197 @@
+.dashboard {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 8px 0 48px;
+}
+
+.greeting {
+  margin: 0 0 40px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.46fr) repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+}
+
+.metricCard {
+  min-width: 0;
+  padding: 18px 20px;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.expectedCard {
+  grid-row: span 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px 20px;
+}
+
+.cardTitle {
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.metricValue {
+  margin: 0;
+  font-size: clamp(24px, 2.2vw, 32px);
+  font-weight: 600;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.expectedAmount {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 14px;
+}
+
+.expectedAmount time {
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.collectionProgress {
+  margin-top: 24px;
+}
+
+.collectionProgress p {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+
+.collectionProgress :global(.progress-track) {
+  height: 15px;
+  border-radius: 5px;
+  background: var(--color-primary-soft);
+}
+
+.reminder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 74px;
+  margin-top: 30px;
+  padding: 16px 20px;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.reminder p {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+
+.reminder strong {
+  display: inline-block;
+  margin-left: 12px;
+  color: var(--color-danger);
+  font-size: 18px;
+}
+
+.reminder :global(.button) {
+  flex-shrink: 0;
+  padding-inline: 24px;
+  font-weight: 400;
+}
+
+.reminder .reminderHelp {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.transactions {
+  margin-top: 30px;
+}
+
+.transactions h2 {
+  margin-bottom: 24px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.transactions th,
+.transactions td {
+  font-size: 14px;
+}
+
+.transactions td {
+  height: 64px;
+}
+
+.paidBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  padding: 5px 14px;
+  border-radius: 7px;
+  background: #059669;
+  color: white;
+  font-weight: 600;
+}
+
+@media (min-width: 1280px) {
+  .dashboard {
+    padding-inline: 56px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .expectedCard {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    min-height: 200px;
+  }
+}
+
+@media (max-width: 479px) {
+  .greeting {
+    margin-bottom: 24px;
+    font-size: 24px;
+  }
+
+  .metricCard {
+    padding: 16px 12px;
+  }
+
+  .cardTitle {
+    font-size: 16px;
+  }
+
+  .metricValue {
+    font-size: 22px;
+  }
+
+  .reminder {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .reminder strong {
+    margin-left: 0;
+    display: block;
+  }
+}

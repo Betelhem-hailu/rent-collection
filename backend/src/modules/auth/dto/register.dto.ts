@@ -1,10 +1,11 @@
 import { z } from 'zod';
+import { PhoneSchema } from '../../../shared/phone.js';
 
 export const RegisterSchema = z.object({
   name: z.string()
     .min(2, { message: "Name is too short" })
     .max(32, { message: "Name is too long" }),
-  phone: z.string().regex(/^\+?[1-9]\d{10,14}$/, { message: "Invalid phone number" }),
+  phone: PhoneSchema,
   email: z.email().max(254).optional(),
   password: z.string().regex(/^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/, {
       message:

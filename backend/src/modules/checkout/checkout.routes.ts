@@ -45,7 +45,7 @@ router.post('/checkout', auth.authenticated.bind(auth), route(async (req, res) =
   if (cents(parsed.amount) > 100000000000000n) throw new HttpError(400, 'Online payment amount is too large');
   const checkout = await prisma.transaction(async tx => {
     const lease = await tx.orm.public.Lease.where({ id: parsed.leaseId }).first();
-    if (!lease || lease.tenantId !== user.id) throw new HttpError(403, 'Only the tenant on this lease can check out');
+    if (!lease || lease.tenantUserId !== user.id) throw new HttpError(403, 'Only the tenant on this lease can check out');
     const { bills } = await syncBilling(tx, lease.id);
     const outstanding = bills.reduce((sum, b) => sum + cents(String(b.amount)) - cents(String(b.paidAmount)), 0n);
     if (cents(parsed.amount) > outstanding) throw new HttpError(400, `Amount exceeds the outstanding rent of ETB ${money(outstanding)}`);
@@ -55,7 +55,7 @@ router.post('/checkout', auth.authenticated.bind(auth), route(async (req, res) =
       if (!pending.checkoutUrl) throw new HttpError(409, 'Checkout is being prepared. Please retry shortly.');
       return pending;
     }
-    return tx.orm.public.Checkout.create({ id: 'rent_' + randomUUID(), leaseId: lease.id, tenantId: user.id, amount: parsed.amount, currency: 'ETB', status: 'PENDING' });
+    return tx.orm.public.Checkout.create({ id: 'rent_' + randomUUID(), leaseId: lease.id, tenantUserId: user.id, amount: parsed.amount, currency: 'ETB', status: 'PENDING' });
   });
   if (checkout.checkoutUrl) return res.json({ checkout });
   try {
@@ -74,7 +74,7 @@ router.post('/checkout/:id/verify', auth.authenticated.bind(auth), route(async (
   const user = await activeUser(req.userId);
   const id = identifier.parse(req.params.id);
   const checkout = await db.Checkout.where({ id }).first();
-  if (!checkout || checkout.tenantId !== user.id) throw new HttpError(404, 'Checkout not found');
+  if (!checkout || checkout.tenantUserId !== user.id) throw new HttpError(404, 'Checkout not found');
   return res.json(await completeCheckout(id));
 }));
 

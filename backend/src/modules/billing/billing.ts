@@ -11,16 +11,22 @@ export function money(value: bigint): string {
   return `${value / 100n}.${String(value % 100n).padStart(2, '0')}`;
 }
 
-export const dateOnly = (value: unknown) => String(value).slice(0, 10);
+// Lease and billing values represent calendar dates. Keep their ISO date part;
+// never let an attached time or offset move them to a different billing day.
+// Native Date values use UTC, matching our midnight-UTC database encoding.
+export const dateOnly = (value: unknown) => Temporal.PlainDate.from(
+  (value instanceof Date ? value.toISOString() : String(value)).slice(0, 10),
+).toString();
 export const today = () => Temporal.Now.plainDateISO('Africa/Nairobi').toString();
 export const stableId = (...parts: string[]) => createHash('sha256').update(parts.join(':')).digest('hex');
 
 export type ScheduleLease = { id: string; amount: string | number; paymentPeriod: string; startDate: unknown; expireDate: unknown; gracePeriod: number };
-export function schedule(lease: ScheduleLease, currentDate = today()) {
+export function schedule(lease: ScheduleLease, currentDate: unknown = today()) {
   const months = { MONTHLY: 1, QUARTERLY: 3, HALF_YEARLY: 6, YEARLY: 12 }[lease.paymentPeriod];
   if (!months) throw new Error('Unsupported billing frequency');
   const start = Temporal.PlainDate.from(dateOnly(lease.startDate));
   const end = Temporal.PlainDate.from(dateOnly(lease.expireDate));
+  const current = Temporal.PlainDate.from(dateOnly(currentDate));
   if (Temporal.PlainDate.compare(end, start) < 0) return [];
   const result = [];
   for (let index = 0; index < 1200; index++) {
@@ -33,11 +39,11 @@ export function schedule(lease: ScheduleLease, currentDate = today()) {
     const actualDays = from.until(through.add({ days: 1 })).days;
     const fullAmount = cents(lease.amount) * BigInt(months);
     const amount = (fullAmount * BigInt(actualDays) + BigInt(Math.floor(cycleDays / 2))) / BigInt(cycleDays);
-    const graceEnds = from.add({ days: lease.gracePeriod }).toString();
+    const graceEnds = from.add({ days: lease.gracePeriod });
     result.push({
       id: stableId('bill', lease.id, from.toString()), leaseId: lease.id,
       startPeriod: from.toString(), endPeriod: through.toString(), amount: money(amount),
-      urgencyStatus: from.toString() > currentDate ? 'UPCOMING' as const : currentDate > graceEnds ? 'OVERDUE' as const : 'DUE' as const,
+      urgencyStatus: Temporal.PlainDate.compare(from, current) > 0 ? 'UPCOMING' as const : Temporal.PlainDate.compare(current, graceEnds) > 0 ? 'OVERDUE' as const : 'DUE' as const,
     });
   }
   throw new Error('Lease exceeds the maximum of 1200 billing periods');
@@ -46,7 +52,7 @@ export function schedule(lease: ScheduleLease, currentDate = today()) {
 export type AllocationBill = { id: string; amount: string | number; startPeriod: unknown };
 export type AllocationPayment = { id: string; amount: string | number; paymentDate: unknown };
 export function allocate(bills: AllocationBill[], payments: AllocationPayment[]) {
-  const orderedBills = [...bills].sort((a, b) => String(a.startPeriod).localeCompare(String(b.startPeriod)) || a.id.localeCompare(b.id));
+  const orderedBills = [...bills].sort((a, b) => dateOnly(a.startPeriod).localeCompare(dateOnly(b.startPeriod)) || a.id.localeCompare(b.id));
   const orderedPayments = [...payments].sort((a, b) => String(a.paymentDate).localeCompare(String(b.paymentDate)) || a.id.localeCompare(b.id));
   const paid = new Map(orderedBills.map(b => [b.id, 0n]));
   const allocations: { id: string; paymentId: string; billingPeriodId: string; amountAllocated: string }[] = [];

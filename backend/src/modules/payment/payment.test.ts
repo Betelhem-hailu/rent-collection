@@ -10,12 +10,12 @@ const input = {
 };
 
 function setup() {
-  const state = { role: 'USER', active: true, owner: 'owner-1', tenant: 'tenant-1', duplicate: false, race: false, created: false, missing: false };
+  const state = { role: 'LANDLORD', active: true, owner: 'owner-1', tenant: 'tenant-1', duplicate: false, race: false, created: false, missing: false };
   let recorded: unknown;
   let listed: unknown;
   const repository = {
     async findUser(id: string) { return { id, role: state.role, isActive: state.active }; },
-    async findLease() { return { id: 'lease-1', propertyId: 'property-1', tenantId: state.tenant }; },
+    async findLease() { return { id: 'lease-1', propertyId: 'property-1', tenantUserId: state.tenant }; },
     async findProperty() { return { landlordId: state.owner }; },
     async findAccessibleLeaseIds() { return ['lease-1']; },
     async list(query: unknown, ids?: string[]) { listed = { query, ids }; return []; },

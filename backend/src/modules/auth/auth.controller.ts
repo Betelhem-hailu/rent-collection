@@ -39,7 +39,21 @@ export function createAuthController(authService: AuthService) {
     }
   };
 
-  return { register, login };
+  const tenantLogin = async (req: Request, res: Response) => {
+    try {
+      const input = z.object({ phone: z.string(), verificationToken: z.string().min(1).max(4096) }).parse(req.body);
+      return res.json({ user: await authService.tenantLogin(input.phone, input.verificationToken) });
+    } catch (error) {
+      if (error instanceof z.ZodError) return res.status(400).json({ error: error.issues.map(issue => issue.message).join('. ') });
+      if (error instanceof Error && error.message === 'PHONE_LOGIN_UNAVAILABLE') return res.status(503).json({ error: 'Phone verification is not configured' });
+      if (error instanceof Error && error.message === 'USER_NOT_ACTIVE') return res.status(403).json({ error: 'User account is not active' });
+      if (error instanceof Error && error.message === 'INVALID_PHONE_VERIFICATION') return res.status(401).json({ error: 'Invalid or expired phone verification' });
+      console.error('Tenant login failed:', error);
+      return res.status(500).json({ error: 'Failed to login' });
+    }
+  };
+
+  return { register, login, tenantLogin };
 }
 
-export const { register, login } = createAuthController(new AuthService(new AuthRepository()));
+export const { register, login, tenantLogin } = createAuthController(new AuthService(new AuthRepository()));

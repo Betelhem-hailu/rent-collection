@@ -13,6 +13,7 @@ type Overview = {
   billingPeriods: { id: string; leaseId: string; startPeriod: string; endPeriod: string; amount: string; paidAmount: string; urgencyStatus: string; paymentStatus: string }[];
   payments: { id: string; leaseId: string; amount: string; transactionRef: string; paymentDate: string; paymentMethod: string }[];
   checkouts: { id: string; leaseId: string; amount: string; status: string; createdAt: string }[];
+  message?: string | null;
 };
 const money = (amount: number) => `ETB ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const date = (value: string) => value.slice(0, 10);
@@ -25,7 +26,8 @@ export function TenantPage({ page }: { page: string }) {
   const [message, setMessage] = useState('');
   const [payLease, setPayLease] = useState<string | null>(null);
   const [checking, setChecking] = useState<string | null>(null);
-  const load = useCallback(async () => setData(await api<Overview>('/tenant/overview')), [api]);
+  const overviewPath = page === 'dashboard' ? '/tenant/portal' : '/tenant/overview';
+  const load = useCallback(async () => setData(await api<Overview>(overviewPath)), [api, overviewPath]);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,13 +41,13 @@ export function TenantPage({ page }: { page: string }) {
         }
       } catch (e) { if (!cancelled) setError((e as Error).message); }
       try {
-        const overview = await api<Overview>('/tenant/overview');
+        const overview = await api<Overview>(overviewPath);
         if (!cancelled) setData(overview);
       } catch (e) { if (!cancelled) setError((e as Error).message); }
     }
     void initialize();
     return () => { cancelled = true; };
-  }, [api]);
+  }, [api, overviewPath]);
 
   async function verify(id: string) {
     setChecking(id); setError(''); setMessage('');
@@ -57,6 +59,10 @@ export function TenantPage({ page }: { page: string }) {
   }
 
   if (!data) return <div className="px-6" role="status">{error || 'Loading rental information…'}{error && <button onClick={() => void load().catch(e => setError(e.message))}>Retry</button>}</div>;
+  if (page === 'dashboard' && data.leases.length === 0) return <div className="px-6 lg:px-12 space-y-6">
+    <h1 className="page-title">My rent</h1>
+    <p className="card-base p-6">{data.message || 'You currently have no active rental agreements linked to this phone number.'}</p>
+  </div>;
   const property = (leaseId: string) => data.properties.find(p => p.id === data.leases.find(l => l.id === leaseId)?.propertyId);
   const balance = (leaseId?: string) => data.billingPeriods.filter(b => !leaseId || b.leaseId === leaseId).reduce((sum, b) => sum + Math.max(0, Number(b.amount) - Number(b.paidAmount)), 0);
   const totalPaid = data.payments.reduce((sum, p) => sum + Number(p.amount), 0);

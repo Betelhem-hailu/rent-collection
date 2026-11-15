@@ -34,7 +34,14 @@ enum PaymentMethod {
 
 enum RoleType {
   ADMIN
-  USER
+  LANDLORD
+  TENANT
+}
+
+enum AuthState {
+  PASSWORD
+  UNINITIALIZED
+  PHONE_VERIFIED
 }
 
 // ==========================
@@ -51,18 +58,53 @@ model PropertyType {
 // USER
 // ==========================
 model User {
-  id       String    @id @default(cuid(2))
+  id       String    @id @default(uuid())
   name     String
   phone    String    @unique
   email    String?
-  password String
+  password String?
   role     RoleType
+  authState AuthState @default(PASSWORD)
+  createdAt DateTime @default(now())
   isActive Boolean   @default(false)
+  phoneVerifiedAt DateTime?
 
   landlord Landlord?
-  tenant   Tenant?
+  tenantActivation TenantActivation?
+  tenantLeases Lease[] @relation("LeaseTenant")
+  tenantCheckouts Checkout[]
   sentNotifications Notification[] @relation("NotificationSender")
   notifications Notification[] @relation("NotificationRecipient")
+}
+
+// Temporary activation state. Codes are managed by the SMS provider; only a
+// hash of the short-lived password setup credential is stored here.
+model TenantActivation {
+  userId String @id
+  user User @relation(fields:[userId], references:[id])
+  challengeId String @unique
+  phone String
+  providerSid String?
+  deliveryState String @default("PENDING")
+  deliveryClaimedAt DateTime?
+  deliveryAttempts Int @default(0)
+  expiresAt DateTime
+  windowStartedAt DateTime
+  sendCount Int
+  lastSentAt DateTime
+  attempts Int @default(0)
+  verifiedAt DateTime?
+  setupTokenHash String?
+  setupExpiresAt DateTime?
+
+  @@index([deliveryState, expiresAt])
+}
+
+// Shared across server instances and restarts. Keys contain hashed IPs.
+model AuthRateLimit {
+  key String @id
+  windowStartedAt DateTime
+  count Int
 }
 
 // ==========================
@@ -73,17 +115,7 @@ model Landlord {
   user            User       @relation(fields:[userId], references:[id])
 
   propertiesOwned Property[]
-}
-
-// ==========================
-// TENANT
-// ==========================
-model Tenant {
-  userId String  @id
-  user   User    @relation(fields:[userId], references:[id])
-
   leases Lease[]
-  checkouts Checkout[]
 }
 
 // ==========================
@@ -105,13 +137,15 @@ model Property {
   landlord       Landlord     @relation(fields:[landlordId], references:[userId])
 
   leases         Lease[]
+
+  @@unique([id, landlordId])
 }
 
 // ==========================
 // LEASE
 // ==========================
 model Lease {
-  id             String          @id @default(cuid(2))
+  id             String          @id @default(uuid())
   amount         Decimal
   paymentPeriod  PaymentPeriod
   startDate      DateTime
@@ -121,15 +155,20 @@ model Lease {
   terms          String          
 
   propertyId     String
-  property       Property        @relation(fields:[propertyId], references:[id])
+  property       Property        @relation(fields:[propertyId, landlordId], references:[id, landlordId])
 
-  tenantId       String
-  tenant         Tenant          @relation(fields:[tenantId], references:[userId])
+  landlordId     String
+  landlord       Landlord        @relation(fields:[landlordId], references:[userId])
+  tenantUserId   String
+  tenant         User            @relation("LeaseTenant", fields:[tenantUserId], references:[id])
 
   billingPeriods BillingPeriod[]
   payments       Payment[]
   checkouts      Checkout[]
   notifications  Notification[]
+
+  @@index([landlordId, tenantUserId])
+  @@index([tenantUserId, status])
 }
 
 // ==========================
@@ -184,8 +223,8 @@ model Checkout {
   id String @id
   leaseId String
   lease Lease @relation(fields:[leaseId], references:[id])
-  tenantId String
-  tenant Tenant @relation(fields:[tenantId], references:[userId])
+  tenantUserId String
+  tenant User @relation(fields:[tenantUserId], references:[id])
   amount Decimal
   currency String @default("ETB")
   status String @default("PENDING")

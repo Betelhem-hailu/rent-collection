@@ -6,6 +6,7 @@ export type Property = {
   status: "Occupied" | "Vacant";
   location: string;
   type: string;
+  size: string;
   utilities: string;
   tenant: string;
   leaseTerms: string;
@@ -31,6 +32,8 @@ export function PropertyDetails({
   const rows = property && [
     ["Location", property.location],
     ["Type", property.type],
+    ["Size", property.size],
+    ["Monthly rent", property.price],
     ["Utilities", property.utilities],
     ["Current tenant", property.tenant],
     ["Lease terms", property.leaseTerms],
@@ -47,16 +50,17 @@ export function PropertyDetails({
     >
       {property && (
         <>
-          <dl className="grid grid-cols-[160px_1fr] gap-y-3">
+          <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:gap-y-3">
             {rows!.map(([label, value]) => (
               <div key={label} className="contents">
                 <dt className="text-body opacity-60">{label}</dt>
-                <dd className="text-subtitle text-[var(--color-text)]">{value}</dd>
+                <dd className="mb-3 break-words text-subtitle text-[var(--color-text)] sm:mb-0">{value}</dd>
               </div>
             ))}
           </dl>
 
-          <p className="text-section-title mt-10 mb-3">Lease history</p>
+          <h3 className="text-section-title mt-10 mb-3">Lease history</h3>
+          <div className="overflow-x-auto">
           <table className="w-full text-body text-left">
             <thead>
               <tr className="opacity-60 border-b border-gray-200">
@@ -66,6 +70,7 @@ export function PropertyDetails({
               </tr>
             </thead>
             <tbody>
+              {property.leases.length === 0 && <tr><td colSpan={3} className="py-4 text-muted">No lease history yet.</td></tr>}
               {property.leases.map((l, i) => (
                 <tr key={i} className="border-b border-gray-100">
                   <td className="py-3">{l.tenant}</td>
@@ -77,6 +82,7 @@ export function PropertyDetails({
               ))}
             </tbody>
           </table>
+          </div>
         </>
       )}
     </Drawer>
