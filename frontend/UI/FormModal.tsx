@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { Modal } from "./Modals";
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 export type FormField = {
   name: string;
@@ -121,6 +122,7 @@ export function FormModal({
         </div>
 
         {errors.submit && <p role="alert" className="text-red-600">{errors.submit}</p>}
+        {submitting && <LoadingSpinner compact label="Saving" />}
         <div className="flex justify-end gap-3 mt-8">
           <button
             type="button"

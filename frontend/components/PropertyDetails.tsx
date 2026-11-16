@@ -1,4 +1,5 @@
 import { Drawer } from "@/UI/Drawer";
+import { PropertyPhoto } from './PropertyPhoto';
 
 export type Property = {
   id: string;
@@ -8,6 +9,7 @@ export type Property = {
   type: string;
   size: string;
   utilities: string;
+  imageData?: string | null;
   tenant: string;
   leaseTerms: string;
   nextPayment: string;
@@ -50,6 +52,7 @@ export function PropertyDetails({
     >
       {property && (
         <>
+          {property.imageData && <PropertyPhoto imageData={property.imageData} name={property.name} className="mb-6 h-56 w-full rounded-xl" />}
           <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-[140px_minmax(0,1fr)] sm:gap-y-3">
             {rows!.map(([label, value]) => (
               <div key={label} className="contents">

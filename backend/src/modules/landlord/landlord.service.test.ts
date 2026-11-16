@@ -2,11 +2,38 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { LandlordError, LandlordService } from './landlord.service.js';
 import type { LandlordRepository } from './landlord.repository.js';
-import { UpdateLeaseSchema } from './landlord.dto.js';
+import { UpdateLeaseSchema, PropertySchema } from './landlord.dto.js';
 import { validateLeaseUpdate } from '../lease/lease-update.js';
 
 const service = (repository: Partial<LandlordRepository>) => new LandlordService(repository as LandlordRepository);
 const rejects = (status: number) => (error: unknown) => error instanceof LandlordError && error.status === status;
+
+test('property creation accepts optional photo and utilities without requiring them on older requests', async () => {
+  const base = { description: 'Riverside Apt 3B', location: 'Addis Ababa', rooms: 1, size: 400, propertyTypeId: 1 };
+  assert.deepEqual(PropertySchema.parse(base), base);
+  const imageData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+  const subject = service({
+    findPropertyType: async () => ({ id: 1, name: 'Apartment' }),
+    createProperty: async (owner, data) => {
+      assert.equal(owner, 'owner');
+      assert.equal(data.imageData, imageData);
+      assert.equal(data.utilities, 'Parking\nWater tank');
+      assert.equal(data.additionalUtilities, 'Solar hot water');
+      return { id: 'home', ...data } as never;
+    },
+  });
+  const result = await subject.createProperty('owner', { ...base, imageData, utilities: ['Parking', 'Water tank', 'Parking'], additionalUtilities: ' Solar hot water ' });
+  assert.equal(result.id, 'home');
+});
+
+test('property photos reject active content, invalid encoding, wrong raster headers and excessive payloads', () => {
+  const base = { description: 'Home', location: 'Addis Ababa', rooms: 1, size: 400, propertyTypeId: 1 };
+  for (const imageData of ['data:image/svg+xml;base64,PHN2Zy8+', 'https://example.com/photo.jpg', 'data:image/png;base64,SGVsbG8=', 'data:image/jpeg;base64,***', `data:image/jpeg;base64,${'A'.repeat(700001)}`]) {
+    assert.equal(PropertySchema.safeParse({ ...base, imageData }).success, false);
+  }
+  assert.equal(PropertySchema.safeParse({ ...base, utilities: ['Parking\nInjected utility'] }).success, false);
+  assert.equal(PropertySchema.safeParse({ ...base, additionalUtilities: 'A'.repeat(1001) }).success, false);
+});
 
 test('landlord billing responses contain calendar dates while receipts retain their time', async () => {
   const payment = { id: 'payment', paymentDate: '2026-01-15T18:20:00Z' };

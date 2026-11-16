@@ -1,6 +1,7 @@
 import { Button } from '@/UI/Button';
 import type { Property } from './PropertyDetails';
 import styles from './PropertiesGrid.module.css';
+import { PropertyPhoto } from './PropertyPhoto';
 
 export function PropertiesGrid({ properties, selectedId, onSelect, onAdd }: {
   properties: Property[];
@@ -28,6 +29,7 @@ export function PropertiesGrid({ properties, selectedId, onSelect, onAdd }: {
           aria-expanded={selectedId === property.id}
           onClick={() => onSelect(property.id)}
         >
+          {property.imageData && <PropertyPhoto imageData={property.imageData} name={property.name} className="mb-4 h-40 w-full rounded-lg" />}
           <span className={styles.cardHeader}>
             <span className={styles.name}>{property.name}</span>
             <span className={`${styles.badge} ${property.status === 'Vacant' ? styles.vacant : ''}`}>{property.status}</span>

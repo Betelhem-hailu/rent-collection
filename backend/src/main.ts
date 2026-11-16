@@ -6,7 +6,7 @@ import { errorResponse } from './shared/http.js';
 import { startActivationDispatcher } from './modules/auth/activation.dispatcher.js';
 
 const app = express();
-app.use(express.json({ limit: '100kb', verify(req, _res, body) { (req as typeof req & { rawBody?: Buffer }).rawBody = Buffer.from(body); } }));
+app.use(express.json({ limit: '800kb', verify(req, _res, body) { (req as typeof req & { rawBody?: Buffer }).rawBody = Buffer.from(body); } }));
 app.use(routes);
 app.use(errorResponse);
 

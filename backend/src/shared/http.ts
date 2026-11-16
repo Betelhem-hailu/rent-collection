@@ -19,6 +19,7 @@ export async function activeUser(id?: string) {
 export function errorResponse(error: unknown, _req: Request, res: Response, _next: unknown) {
   if (error instanceof z.ZodError) return res.status(400).json({ error: error.issues.map(i => i.message).join('. ') });
   if (error instanceof HttpError) return res.status(error.status).json({ error: error.message });
+  if (error && typeof error === 'object' && 'status' in error && error.status === 413) return res.status(413).json({ error: 'The property photo is too large. Choose a smaller image.' });
   if (error instanceof SyntaxError && 'status' in error && error.status === 400) return res.status(400).json({ error: 'Invalid JSON request' });
   console.error('Request failed:', error);
   return res.status(500).json({ error: 'Unable to complete request' });

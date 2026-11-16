@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useApi } from '@/lib/api';
+import { LoadingSpinner } from './LoadingSpinner';
 
 export type Session = { user: { id: string; name: string; phone: string; email: string | null; businessRole: 'LANDLORD' | 'TENANT' | 'ADMIN' | null }; checkoutAvailable: boolean; emailNotificationsAvailable: boolean };
 const Context = createContext<(Session & { refresh: () => Promise<void> }) | null>(null);
@@ -19,6 +20,6 @@ export function AppSession({ children }: { children: ReactNode }) {
     setError('');
   }, [api]);
   useEffect(() => { let active = true; api<Session>('/auth/me').then(result => { if (active) setSession(result); }).catch(e => { if (active) setError(e.message); }); return () => { active = false; }; }, [api]);
-  if (!session) return <main className="p-8" role="status">{error || 'Loading your account…'}{error && <button className="button button-primary" onClick={() => void refresh().catch(e => setError(e.message))}>Retry</button>}</main>;
+  if (!session) return error ? <main className="p-8" role="alert"><p>{error}</p><button className="button button-primary" onClick={() => void refresh().catch(e => setError(e.message))}>Retry</button></main> : <LoadingSpinner fullScreen label="Loading your account" />;
   return <Context.Provider value={{ ...session, refresh }}>{children}</Context.Provider>;
 }

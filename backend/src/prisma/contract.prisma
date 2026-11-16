@@ -127,6 +127,9 @@ model Property {
   description      String
   rooms          Int
   location       String
+  imageData      String?
+  utilities      String?
+  additionalUtilities String?
   isActive       Boolean      @default(true)
   createdAt      DateTime     @default(now())
 

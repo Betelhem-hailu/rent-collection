@@ -23,7 +23,11 @@ const navItems = [
 export function SideBar() {
     const pathname = usePathname();
     const { user } = useSession();
-    const items = user.businessRole === 'ADMIN' ? [{ label: 'Accounts', href: '/accounts', icon: Users }] : user.businessRole === 'TENANT' ? navItems.filter(n => ['/dashboard', '/leases', '/payments'].includes(n.href)).map(n => n.href === '/leases' ? { ...n, label: 'Rental information' } : n) : navItems;
+    const items = user.businessRole === 'ADMIN' ? [{ label: 'Accounts', href: '/accounts', icon: Users }] : user.businessRole === 'TENANT' ? [
+      { label: 'Home', href: '/dashboard', icon: House },
+      { label: 'Lease & Property', href: '/leases', icon: FileText },
+      { label: 'Payments & Ledger', href: '/payments', icon: CreditCard },
+    ] : navItems;
     
   return (
     <aside className="fixed left-0 top-0 z-50 h-screen w-[72px] overflow-y-auto rounded-r-2xl bg-white/[0.75] p-3 shadow-[0px_4px_24px_rgba(0,0,0,0.06)] backdrop-blur-[6px] md:w-[200px] md:p-5 xl:w-[260px] dark:bg-slate-900/80">

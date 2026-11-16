@@ -1,7 +1,26 @@
 import { z } from 'zod';
 import { PhoneSchema } from '../../shared/phone.js';
 
-export const PropertySchema = z.object({ description: z.string().trim().min(1), location: z.string().trim().min(1), rooms: z.coerce.number().int().positive(), size: z.coerce.number().positive(), propertyTypeId: z.coerce.number().int().positive() });
+// Store a bounded raster image with the property, so uploads survive restarts
+// without relying on a publicly accessible local uploads directory.
+export const PropertyImageSchema = z.string().max(700000).refine(value => {
+  const match = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
+  if (!match) return false;
+  const bytes = Buffer.from(match[2], 'base64');
+  if (bytes.length > 500000 || bytes.toString('base64') !== match[2]) return false;
+  if (match[1] === 'jpeg') return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  if (match[1] === 'png') return bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+  return bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP';
+}, 'Choose a JPEG, PNG or WebP photo smaller than 500 KB');
+
+export const PropertySchema = z.object({
+  description: z.string().trim().min(1).max(1000), location: z.string().trim().min(1).max(500),
+  rooms: z.coerce.number().int().positive(), size: z.coerce.number().positive(), propertyTypeId: z.coerce.number().int().positive(),
+  imageData: PropertyImageSchema.optional(),
+  utilities: z.array(z.string().trim().min(1).max(80).refine(value => !/[\r\n]/.test(value), 'Utility must be a single line')).max(20)
+    .transform(values => [...new Set(values)].join('\n')).optional(),
+  additionalUtilities: z.string().trim().max(1000).optional(),
+});
 
 export const LeaseDetailsSchema = z.object({
   rentAmount: z.union([z.number(), z.string().regex(/^\d+(?:\.\d{1,2})?$/).transform(Number)]).pipe(z.number().positive().max(1e12).refine(n => /^\d+(?:\.\d{1,2})?$/.test(String(n)), 'Rent must have at most two decimal places')),

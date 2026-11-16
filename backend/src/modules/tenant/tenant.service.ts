@@ -1,6 +1,6 @@
 import { HttpError } from '../../shared/http.js';
 import type { TenantRepository } from './tenant.repository.js';
-import { dateOnly } from '../billing/billing.js';
+import { dateOnly, today } from '../billing/billing.js';
 
 export const NO_ACTIVE_LEASE_MESSAGE = 'You currently have no active rental agreements linked to this phone number.';
 
@@ -17,6 +17,6 @@ export class TenantService {
     if (user.role !== 'TENANT' && leases.length === 0) throw new HttpError(403, 'Tenant access required');
     const data = await this.repository.rentalData(user.id, leases);
     const billingPeriods = data.billingPeriods.map(bill => ({ ...bill, startPeriod: dateOnly(bill.startPeriod), endPeriod: dateOnly(bill.endPeriod) }));
-    return { leases, ...data, billingPeriods, hasActiveLease: activeOnly ? leases.length > 0 : undefined, message: activeOnly && !leases.length ? NO_ACTIVE_LEASE_MESSAGE : null };
+    return { leases, ...data, billingPeriods, businessDate: today(), hasActiveLease: activeOnly ? leases.length > 0 : undefined, message: activeOnly && !leases.length ? NO_ACTIVE_LEASE_MESSAGE : null };
   }
 }

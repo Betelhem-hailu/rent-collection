@@ -2,7 +2,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useApi } from '@/lib/api';
 import { DataTable, type Column } from '@/UI/DataTable';
-import { FormModal, type FormField } from '@/UI/FormModal';
+import { FormModal } from '@/UI/FormModal';
+import { NewPropertyForm } from './NewPropertyForm';
+import { LoadingSpinner } from './LoadingSpinner';
 import { NewLeaseForm } from '@/components/NewLeaseForm';
 import { PropertyDetails, type Property as PropertyView } from '@/components/PropertyDetails';
 import { LeaseDetails } from '@/components/LeaseDetails';
@@ -20,6 +22,9 @@ type Property = {
     rooms: number;
     size: string;
     propertyTypeId: number;
+    imageData?: string | null;
+    utilities?: string | null;
+    additionalUtilities?: string | null;
 };
 type RawLease = {
     id: string;
@@ -208,7 +213,7 @@ export function LandlordPage({ page }: {
         }
     }
     if (!data)
-        return <div className="pl-20" role="status">{error || 'Loading?'}{error && <button onClick={() => void load()}>Retry</button>}</div>;
+        return error ? <div className="p-8" role="alert"><p>{error}</p><button className="button button-primary button-md" onClick={() => void load()}>Retry</button></div> : <LoadingSpinner label="Loading landlord information" />;
     const tenantName = (id: string) => data.tenants.find(t => t.id === id)?.name || id;
     const propertyName = (id: string) => data.properties.find(p => p.id === id)?.description || id;
     const balance = (leaseId: string) => data.billingPeriods.filter(b => b.leaseId === leaseId).reduce((n, b) => n + Math.max(0, Number(b.amount) - Number(b.paidAmount)), 0);
@@ -216,7 +221,6 @@ export function LandlordPage({ page }: {
     const selectedLease = leases.find(lease => lease.id === selected) || null;
     const leaseColumns: Column<Lease>[] = [{ key: 'id', header: 'Overdue reminder', render: l => data.billingPeriods.some(b => b.leaseId === l.id && b.urgencyStatus === 'OVERDUE' && Number(b.amount) > Number(b.paidAmount)) ? <button disabled={busy || !session.emailNotificationsAvailable} onClick={() => void remind(l.id)}>Email tenant</button> : 'No overdue rent' }, { key: 'tenant', header: 'Tenant' }, { key: 'property', header: 'Property' }, { key: 'contact', header: 'Contact' }, { key: 'startDate', header: 'Term', render: l => `${l.startDate} to ${l.endDate}` }, { key: 'rent', header: 'Rent', render: l => money(l.rent) }, { key: 'status', header: 'Status' }, { key: 'id', header: 'Actions', render: l => <button onClick={() => setSelected(l.id)}>{l.status === 'Active' ? 'Update' : 'View'}</button> }];
     const paymentColumns: Column<Payment>[] = [{ key: 'transactionRef', header: 'Reference' }, { key: 'leaseId', header: 'Tenant / Property', render: p => { const l = data.leases.find(l => l.id === p.leaseId); return l ? `${tenantName(l.tenantUserId)} / ${propertyName(l.propertyId)}` : p.leaseId; } }, { key: 'amount', header: 'Amount', render: p => money(Number(p.amount)) }, { key: 'paymentDate', header: 'Date', render: p => date(p.paymentDate) }, { key: 'paymentMethod', header: 'Method' }];
-    const fields: FormField[] = [{ name: 'description', label: 'Property description', required: true }, { name: 'location', label: 'Location', required: true }, { name: 'rooms', label: 'Rooms', type: 'number', required: true }, { name: 'size', label: 'Size (square feet)', type: 'number', required: true }, { name: 'propertyTypeId', label: 'Property type', type: 'select', required: true, options: data.propertyTypes.map(t => ({ label: t.name, value: String(t.id) })) }];
     const propertyViews: PropertyView[] = data.properties.map(property => {
         const propertyLeases = leases.filter(lease => lease.propertyId === property.id);
         const activeLease = propertyLeases.find(lease => lease.status === 'Active');
@@ -227,7 +231,8 @@ export function LandlordPage({ page }: {
             type: `${data.propertyTypes.find(type => type.id === property.propertyTypeId)?.name || 'Property'}, ${property.rooms} rooms`,
             size: `${property.size} sq ft`,
             status: activeLease ? 'Occupied' : 'Vacant',
-            utilities: 'Not specified',
+            imageData: property.imageData,
+            utilities: [property.utilities?.split('\n').join(', '), property.additionalUtilities].filter(Boolean).join(' · ') || 'Not specified',
             tenant: activeLease?.tenant || 'Vacant',
             leaseTerms: activeLease ? `${activeLease.startDate} to ${activeLease.endDate}` : 'No active lease',
             nextPayment: activeLease?.billingPeriods.filter(bill => bill.due >= new Date().toISOString().slice(0, 10)).sort((a, b) => a.due.localeCompare(b.due))[0]?.due || 'No upcoming bill',
@@ -255,11 +260,11 @@ export function LandlordPage({ page }: {
     <PropertyDetails property={propertyView} onClose={() => setSelectedProperty(null)}/>{page !== 'dashboard' && page !== 'properties' && <h1 className="page-title capitalize">{page}</h1>}
     {error && <p role="alert" className="text-red-600">{error}</p>}
     {notice && <p role="status">{notice}</p>}
-    {busy && <p role="status">{page === 'dashboard' ? 'Sending reminder…' : 'Saving…'}</p>}
+    {busy && !open && <LoadingSpinner overlay label={page === 'dashboard' ? 'Sending reminder' : 'Saving'} />}
     {page === 'dashboard' && <LandlordDashboard data={data} busy={busy} remindersAvailable={session.emailNotificationsAvailable} onRemind={leaseId => void remind(leaseId)} />}
     {page === 'properties' && <>
         <PropertiesGrid properties={propertyViews} selectedId={selectedProperty} onSelect={setSelectedProperty} onAdd={() => setOpen(true)} />
-        <FormModal open={open} onClose={() => setOpen(false)} title="Add property" fields={fields} onSubmit={async values => { await mutate('/landlord/properties', values); }} />
+        {open && <NewPropertyForm onClose={() => setOpen(false)} propertyTypes={data.propertyTypes} onCreate={async values => { await mutate('/landlord/properties', values); }} />}
     </>}
     {page === 'tenants' && <DataTable columns={[{ key: 'name', header: 'Tenant' }, { key: 'phone', header: 'Contact' }, { key: 'id', header: 'Properties', render: t => data.leases.filter(l => l.tenantUserId === t.id).map(l => propertyName(l.propertyId)).join(', ') }, { key: 'id', header: 'Balance', render: t => money(data.leases.filter(l => l.tenantUserId === t.id).reduce((n, l) => n + balance(l.id), 0)) }]} data={data.tenants} getRowKey={t => t.id} emptyMessage="No tenants linked to your leases yet."/>}
     {page === 'payments' && <><p className="text-subtitle">Receipts are allocated to the oldest bills first and update outstanding balances. Surplus payments remain as credit.</p><button onClick={() => setOpen(true)}>Record payment</button><FormModal open={open} onClose={() => setOpen(false)} title="Record payment" fields={[{ name: 'leaseId', label: 'Lease', type: 'select', required: true, options: leases.map(l => ({ label: `${l.tenant} / ${l.property}`, value: l.id })) }, { name: 'amount', label: 'Amount (ETB)', type: 'number', required: true, min: '0.01', step: '0.01' }, { name: 'transactionRef', label: 'Transaction reference', required: true }, { name: 'paymentMethod', label: 'Method', type: 'select', required: true, options: ['CASH', 'MOBILE_MONEY', 'BANK'].map(value => ({ label: value.replace('_', ' '), value })) }]} onSubmit={async (values) => { await mutate('/payments', values); }}/><div className="flex gap-4"><label>Month <input type="month" value={month} onChange={e => setMonth(e.target.value)}/></label></div><DataTable columns={paymentColumns} data={data.payments.filter(p => p.paymentDate.startsWith(month))} getRowKey={p => p.id} emptyMessage="No payments this month."/></>}
