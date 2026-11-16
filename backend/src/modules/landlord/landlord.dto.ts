@@ -22,6 +22,11 @@ export const PropertySchema = z.object({
   additionalUtilities: z.string().trim().max(1000).optional(),
 });
 
+export const UpdatePropertyInfoSchema = PropertySchema.omit({ imageData: true }).partial().strict()
+  .refine(patch => Object.values(patch).some(value => value !== undefined), 'Provide at least one property field to update');
+export const UpdatePropertyImageSchema = z.object({ imageData: PropertyImageSchema.nullable() }).strict();
+export type UpdatePropertyInfoInput = z.infer<typeof UpdatePropertyInfoSchema>;
+
 export const LeaseDetailsSchema = z.object({
   rentAmount: z.union([z.number(), z.string().regex(/^\d+(?:\.\d{1,2})?$/).transform(Number)]).pipe(z.number().positive().max(1e12).refine(n => /^\d+(?:\.\d{1,2})?$/.test(String(n)), 'Rent must have at most two decimal places')),
   paymentPeriod: z.enum(['MONTHLY', 'QUARTERLY', 'HALF_YEARLY', 'YEARLY']).default('MONTHLY'),

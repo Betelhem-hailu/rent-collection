@@ -10,6 +10,8 @@ router.use('/landlord', auth.authenticated.bind(auth), LandlordController.author
 router.get('/landlord/overview', LandlordController.overview);
 router.get('/landlords/:id/tenants', auth.authenticated.bind(auth), LandlordController.authorize, LandlordController.tenants);
 router.post('/landlord/properties', LandlordController.createProperty);
+router.patch('/landlord/properties/:id', LandlordController.updatePropertyInfo);
+router.patch('/landlord/properties/:id/image', LandlordController.updatePropertyImage);
 router.post('/landlord/tenants', LandlordController.findTenant);
 router.post('/landlord/leases', LandlordController.createLease);
 router.patch('/landlord/leases/:id', LandlordController.updateLease);

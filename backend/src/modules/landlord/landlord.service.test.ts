@@ -2,11 +2,63 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { LandlordError, LandlordService } from './landlord.service.js';
 import type { LandlordRepository } from './landlord.repository.js';
-import { UpdateLeaseSchema, PropertySchema } from './landlord.dto.js';
+import { UpdateLeaseSchema, PropertySchema, UpdatePropertyInfoSchema, UpdatePropertyImageSchema } from './landlord.dto.js';
 import { validateLeaseUpdate } from '../lease/lease-update.js';
 
 const service = (repository: Partial<LandlordRepository>) => new LandlordService(repository as LandlordRepository);
 const rejects = (status: number) => (error: unknown) => error instanceof LandlordError && error.status === status;
+
+test('property information updates preserve the image and allow clearing optional utilities', async () => {
+  const property = { id: 'home', landlordId: 'owner', description: 'Old name', imageData: 'existing-photo', utilities: 'Parking', additionalUtilities: 'Old extra' };
+  const subject = service({
+    findOwnedProperty: async (id, owner) => id === property.id && owner === property.landlordId ? property as never : null,
+    updatePropertyInfo: async (id, owner, patch) => { assert.equal(id, property.id); assert.equal(owner, property.landlordId); Object.assign(property, patch); },
+    updatePropertyImage: async () => { assert.fail('Information updates must not write the image'); },
+  });
+  assert.deepEqual(await subject.updatePropertyInfo('owner', 'home', { description: 'Updated name', utilities: [], additionalUtilities: '' }), { success: true });
+  assert.equal(property.description, 'Updated name');
+  assert.equal(property.imageData, 'existing-photo');
+  assert.equal(property.utilities, '');
+  assert.equal(property.additionalUtilities, '');
+});
+
+test('property photo replacement and removal preserve property information', async () => {
+  const property = { id: 'home', landlordId: 'owner', description: 'Home', imageData: null as string | null, utilities: 'Parking' };
+  const subject = service({
+    findOwnedProperty: async () => property as never,
+    updatePropertyInfo: async () => { assert.fail('Photo updates must not write property information'); },
+    updatePropertyImage: async (id, owner, imageData) => { assert.equal(id, 'home'); assert.equal(owner, 'owner'); property.imageData = imageData; },
+  });
+  const imageData = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+  await subject.updatePropertyImage('owner', 'home', { imageData });
+  assert.equal(property.imageData, imageData);
+  await subject.updatePropertyImage('owner', 'home', { imageData: null });
+  assert.equal(property.imageData, null);
+  assert.equal(property.description, 'Home');
+  assert.equal(property.utilities, 'Parking');
+});
+
+test('property updates reject unrelated owners and invalid property types before writing', async () => {
+  let writes = 0;
+  const subject = service({
+    findOwnedProperty: async (_id, owner) => owner === 'owner' ? { id: 'home' } as never : null,
+    findPropertyType: async () => null,
+    updatePropertyInfo: async () => { writes++; }, updatePropertyImage: async () => { writes++; },
+  });
+  await assert.rejects(subject.updatePropertyInfo('other-owner', 'home', { description: 'Changed' }), rejects(404));
+  await assert.rejects(subject.updatePropertyImage('other-owner', 'home', { imageData: null }), rejects(404));
+  await assert.rejects(subject.updatePropertyInfo('owner', 'home', { propertyTypeId: 999 }), rejects(400));
+  assert.equal(writes, 0);
+});
+
+test('property info and image patches reject mixed fields, reassignment and empty or invalid changes', () => {
+  for (const body of [{}, { imageData: null }, { landlordId: 'other', location: 'New location' }, { rooms: 0 }, { description: ' ' }, { size: -1 }]) {
+    assert.equal(UpdatePropertyInfoSchema.safeParse(body).success, false);
+  }
+  for (const body of [{}, { imageData: null, location: 'New location' }, { imageData: 'invalid' }, { imageData: null, landlordId: 'other' }]) {
+    assert.equal(UpdatePropertyImageSchema.safeParse(body).success, false);
+  }
+});
 
 test('property creation accepts optional photo and utilities without requiring them on older requests', async () => {
   const base = { description: 'Riverside Apt 3B', location: 'Addis Ababa', rooms: 1, size: 400, propertyTypeId: 1 };

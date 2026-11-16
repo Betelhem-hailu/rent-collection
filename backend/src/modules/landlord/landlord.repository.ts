@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Temporal } from 'temporal-polyfill';
 import { prisma } from '../../shared/database/prisma.service.js';
-import type { CreatePropertyInput, CreateLeaseInput, UpdateLeaseInput } from './landlord.dto.js';
+import type { CreatePropertyInput, CreateLeaseInput, UpdateLeaseInput, UpdatePropertyInfoInput } from './landlord.dto.js';
 import { syncBilling, refreshBilling, lockLease, effectiveTerminationDate } from '../billing/billing.repository.js';
 import { LandlordError } from './landlord.error.js';
 import { validateLeaseUpdate } from '../lease/lease-update.js';
@@ -55,6 +55,14 @@ export class LandlordRepository {
 
   async findOwnedProperty(id: string, landlordId: string) {
     return db.Property.where({ id, landlordId }).first();
+  }
+
+  async updatePropertyInfo(id: string, landlordId: string, patch: UpdatePropertyInfoInput) {
+    await db.Property.where({ id, landlordId }).update({ ...patch, size: patch.size === undefined ? undefined : String(patch.size) });
+  }
+
+  async updatePropertyImage(id: string, landlordId: string, imageData: string | null) {
+    await db.Property.where({ id, landlordId }).update({ imageData });
   }
 
   async findLease(id: string) {

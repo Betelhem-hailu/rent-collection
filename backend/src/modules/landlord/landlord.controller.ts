@@ -38,6 +38,16 @@ export function createLandlordController(service: LandlordService) {
         return res.json({ tenant });
       } catch (error) { return handleError(res, error); }
     },
+    async updatePropertyInfo(req: AuthRequest, res: Response) {
+      try {
+        return res.json(await service.updatePropertyInfo(req.userId!, String(req.params.id), req.body));
+      } catch (error) { return handleError(res, error); }
+    },
+    async updatePropertyImage(req: AuthRequest, res: Response) {
+      try {
+        return res.json(await service.updatePropertyImage(req.userId!, String(req.params.id), req.body));
+      } catch (error) { return handleError(res, error); }
+    },
     async tenants(req: AuthRequest, res: Response) {
       try {
         return res.json({ tenants: await service.tenants(req.userId!, String(req.params.id)) });

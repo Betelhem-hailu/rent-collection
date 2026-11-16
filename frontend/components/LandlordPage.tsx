@@ -4,6 +4,7 @@ import { useApi } from '@/lib/api';
 import { DataTable, type Column } from '@/UI/DataTable';
 import { FormModal } from '@/UI/FormModal';
 import { NewPropertyForm } from './NewPropertyForm';
+import { PropertyImageForm } from './PropertyImageForm';
 import { LoadingSpinner } from './LoadingSpinner';
 import { NewLeaseForm } from '@/components/NewLeaseForm';
 import { PropertyDetails, type Property as PropertyView } from '@/components/PropertyDetails';
@@ -172,6 +173,7 @@ export function LandlordPage({ page }: {
     const [open, setOpen] = useState(false);
     const [busy, setBusy] = useState(false);
     const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
+    const [propertyEdit, setPropertyEdit] = useState<'info' | 'image' | null>(null);
     const [selected, setSelected] = useState<string | null>(null);
     const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
     async function remind(leaseId: string) {
@@ -242,6 +244,22 @@ export function LandlordPage({ page }: {
         };
     });
     const propertyView = propertyViews.find(property => property.id === selectedProperty) || null;
+    const editingProperty = data.properties.find(property => property.id === selectedProperty);
+    async function saveProperty(body: unknown, image = false) {
+        if (!selectedProperty || busy) throw new Error('Please wait for the current request to finish.');
+        setBusy(true); setError(''); setNotice('');
+        let saved = false;
+        try {
+            await api(`/landlord/properties/${encodeURIComponent(selectedProperty)}${image ? '/image' : ''}`, { method: 'PATCH', body: JSON.stringify(body) });
+            saved = true;
+            setData(await api<Overview>('/landlord/overview'));
+            setNotice(image ? 'Property photo updated.' : 'Property information updated.');
+        } catch (failure) {
+            const message = saved ? 'Property saved, but the list could not be refreshed. Reload the page before editing again.'
+                : failure instanceof Error ? failure.message : 'Unable to update property.';
+            setError(message); throw new Error(message);
+        } finally { setBusy(false); }
+    }
     async function patch(id: string, body: unknown) {
         if (busy) throw new Error('Please wait for the current request to finish.');
         setBusy(true); setError(''); setNotice('');
@@ -257,14 +275,18 @@ export function LandlordPage({ page }: {
         } finally { setBusy(false); }
     }
     return <div className={page === 'dashboard' ? styles.dashboard : page === 'properties' ? propertyStyles.page : 'pl-20 pr-10 space-y-6'}>
-    <PropertyDetails property={propertyView} onClose={() => setSelectedProperty(null)}/>{page !== 'dashboard' && page !== 'properties' && <h1 className="page-title capitalize">{page}</h1>}
+    <PropertyDetails property={propertyEdit ? null : propertyView} onClose={() => setSelectedProperty(null)} onUpdateInfo={() => setPropertyEdit('info')} onUpdateImage={() => setPropertyEdit('image')} />{page !== 'dashboard' && page !== 'properties' && <h1 className="page-title capitalize">{page}</h1>}
     {error && <p role="alert" className="text-red-600">{error}</p>}
     {notice && <p role="status">{notice}</p>}
-    {busy && !open && <LoadingSpinner overlay label={page === 'dashboard' ? 'Sending reminder' : 'Saving'} />}
+    {busy && !open && !propertyEdit && <LoadingSpinner overlay label={page === 'dashboard' ? 'Sending reminder' : 'Saving'} />}
     {page === 'dashboard' && <LandlordDashboard data={data} busy={busy} remindersAvailable={session.emailNotificationsAvailable} onRemind={leaseId => void remind(leaseId)} />}
     {page === 'properties' && <>
         <PropertiesGrid properties={propertyViews} selectedId={selectedProperty} onSelect={setSelectedProperty} onAdd={() => setOpen(true)} />
         {open && <NewPropertyForm onClose={() => setOpen(false)} propertyTypes={data.propertyTypes} onCreate={async values => { await mutate('/landlord/properties', values); }} />}
+        {propertyEdit === 'info' && editingProperty && <NewPropertyForm key={`info-${editingProperty.id}`} onClose={() => setPropertyEdit(null)} propertyTypes={data.propertyTypes}
+          initialValues={{ description: editingProperty.description, location: editingProperty.location, rooms: String(editingProperty.rooms), size: editingProperty.size, propertyTypeId: String(editingProperty.propertyTypeId), utilities: editingProperty.utilities?.split('\n').filter(Boolean) || [], additionalUtilities: editingProperty.additionalUtilities || '' }}
+          onCreate={values => saveProperty(values)} />}
+        {propertyEdit === 'image' && editingProperty && <PropertyImageForm key={`image-${editingProperty.id}`} imageData={editingProperty.imageData} onClose={() => setPropertyEdit(null)} onSave={imageData => saveProperty({ imageData }, true)} />}
     </>}
     {page === 'tenants' && <DataTable columns={[{ key: 'name', header: 'Tenant' }, { key: 'phone', header: 'Contact' }, { key: 'id', header: 'Properties', render: t => data.leases.filter(l => l.tenantUserId === t.id).map(l => propertyName(l.propertyId)).join(', ') }, { key: 'id', header: 'Balance', render: t => money(data.leases.filter(l => l.tenantUserId === t.id).reduce((n, l) => n + balance(l.id), 0)) }]} data={data.tenants} getRowKey={t => t.id} emptyMessage="No tenants linked to your leases yet."/>}
     {page === 'payments' && <><p className="text-subtitle">Receipts are allocated to the oldest bills first and update outstanding balances. Surplus payments remain as credit.</p><button onClick={() => setOpen(true)}>Record payment</button><FormModal open={open} onClose={() => setOpen(false)} title="Record payment" fields={[{ name: 'leaseId', label: 'Lease', type: 'select', required: true, options: leases.map(l => ({ label: `${l.tenant} / ${l.property}`, value: l.id })) }, { name: 'amount', label: 'Amount (ETB)', type: 'number', required: true, min: '0.01', step: '0.01' }, { name: 'transactionRef', label: 'Transaction reference', required: true }, { name: 'paymentMethod', label: 'Method', type: 'select', required: true, options: ['CASH', 'MOBILE_MONEY', 'BANK'].map(value => ({ label: value.replace('_', ' '), value })) }]} onSubmit={async (values) => { await mutate('/payments', values); }}/><div className="flex gap-4"><label>Month <input type="month" value={month} onChange={e => setMonth(e.target.value)}/></label></div><DataTable columns={paymentColumns} data={data.payments.filter(p => p.paymentDate.startsWith(month))} getRowKey={p => p.id} emptyMessage="No payments this month."/></>}

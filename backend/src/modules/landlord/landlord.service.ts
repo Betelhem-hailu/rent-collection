@@ -1,5 +1,5 @@
 import type { LandlordRepository } from './landlord.repository.js';
-import { PropertySchema, LeaseSchema, TenantLookupSchema, UpdateLeaseSchema } from './landlord.dto.js';
+import { PropertySchema, LeaseSchema, TenantLookupSchema, UpdateLeaseSchema, UpdatePropertyInfoSchema, UpdatePropertyImageSchema } from './landlord.dto.js';
 import { LandlordError } from './landlord.error.js';
 import { validateLeaseUpdate } from '../lease/lease-update.js';
 import { dateOnly, today } from '../billing/billing.js';
@@ -33,6 +33,21 @@ export class LandlordService {
     const data = PropertySchema.parse(input);
     if (!await this.repository.findPropertyType(data.propertyTypeId)) throw new LandlordError(400, 'Invalid property type');
     return this.repository.createProperty(userId, data);
+  }
+
+  async updatePropertyInfo(userId: string, id: string, input: unknown) {
+    const patch = UpdatePropertyInfoSchema.parse(input);
+    if (!await this.repository.findOwnedProperty(id, userId)) throw new LandlordError(404, 'Property not found');
+    if (patch.propertyTypeId !== undefined && !await this.repository.findPropertyType(patch.propertyTypeId)) throw new LandlordError(400, 'Invalid property type');
+    await this.repository.updatePropertyInfo(id, userId, patch);
+    return { success: true };
+  }
+
+  async updatePropertyImage(userId: string, id: string, input: unknown) {
+    const { imageData } = UpdatePropertyImageSchema.parse(input);
+    if (!await this.repository.findOwnedProperty(id, userId)) throw new LandlordError(404, 'Property not found');
+    await this.repository.updatePropertyImage(id, userId, imageData);
+    return { success: true };
   }
 
   async tenants(userId: string, landlordId: string) {

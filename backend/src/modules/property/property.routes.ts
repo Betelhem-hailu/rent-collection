@@ -9,6 +9,8 @@ const router = Router();
 const auth = new AuthMiddleware(new AuthRepository());
 router.use('/property', auth.authenticated.bind(auth));
 router.post('/property', LandlordController.authorize, LandlordController.createProperty);
+router.patch('/property/:id', LandlordController.authorize, LandlordController.updatePropertyInfo);
+router.patch('/property/:id/image', LandlordController.authorize, LandlordController.updatePropertyImage);
 router.get('/property/:id', auth.authenticated.bind(auth), route(async (req, res) => {
   const user = await activeUser(req.userId);
   const property = await prisma.orm.public.Property.where({ id: String(req.params.id) }).first();
